@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fontsource-days-one@4.0.0/index.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+
+    <title>Animation Department Scripts</title>
+    <script src="https://kit.fontawesome.com/0bce3bbcee.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Animation Department Scripts <span class="txtVersion" style="color: lightgray;">ver 0.1</span></h1>
+        </div>
+        <div class="section-1">
+            <h2>Работа с папками</h2>
+            <div class="buttons">
+                <button class="glow-on-hover" id="archive-button">
+                    <i class="fa-regular fa-file-zipper fa-xl"></i> Архивировать </br>выделенные папки
+                </button>
+            </div>
+            
+        </div>
+        <div class="section-1">
+            <h2>В разработке</h2>
+            <div class="buttons">
+                <button class="glow-on-hover glow-on-hover-dev" id="archive-button">Проверить </br>наличие строки</button>
+                <button class="glow-on-hover glow-on-hover-dev" id="archive-button">Проверить </br>наличие строки</button>
+                <button class="glow-on-hover glow-on-hover-dev" id="archive-button">Проверить </br>наличие строки</button>
+            </div>
+            
+        </div>
+        
+        <pre id="output"></pre>
+    </div>
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        document.getElementById('archive-button').addEventListener('click', () => {
+            const script = `
+            -- Получить выделенные элементы Finder
+                tell application "Finder"
+                    set selectedItems to selection
+                end tell
+
+                -- Пройти по каждому выделенному элементу
+                repeat with anItem in selectedItems
+                    -- Получить путь к выделенному элементу
+                    set itemPath to POSIX path of (anItem as alias)
+                    
+                    -- Получить имя папки/файла
+                    set itemName to name of anItem
+                    
+                    -- Определить путь для архива
+                    set archivePath to POSIX path of (itemPath & "/../" & itemName & ".zip")
+                    
+                    -- Архивировать содержимое папки без неё самой и исключить .DS_Store
+                    do shell script "cd " & quoted form of itemPath & " && zip -r " & quoted form of archivePath & " . -x '*.DS_Store' -x '*.fla'"
+                end repeat
+
+            `;
+
+            ipcRenderer.send('run-applescript', script);
+        });
+
+        ipcRenderer.on('applescript-response', (event, response) => {
+            document.getElementById('output').textContent = response;
+        });
+    </script>
+</body>
+</html>
