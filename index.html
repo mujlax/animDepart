@@ -29,10 +29,13 @@
         </div>
         <div class="section-1">
             <h2>В разработке</h2>
+        </br>
+            <label for="inputStroke">Строчка</label>
+            <input value="<meta name=" type="text" id="search-input" placeholder="  Введите строку для поиска">
             <div class="buttons">
-                <button class="glow-on-hover glow-on-hover-dev" id="archive-button">Проверить </br>наличие строки</button>
-                <button class="glow-on-hover glow-on-hover-dev" id="archive-button">Проверить </br>наличие строки</button>
-                <button class="glow-on-hover glow-on-hover-dev" id="archive-button">Проверить </br>наличие строки</button>
+                <button class="glow-on-hover glow-on-hover-dev" id="search-button">Проверить </br>наличие строки</button>
+                <!-- <button class="glow-on-hover glow-on-hover-dev" id="archive-button">Проверить </br>наличие строки</button>
+                <button class="glow-on-hover glow-on-hover-dev" id="archive-button">Проверить </br>наличие строки</button> -->
             </div>
             
         </div>
@@ -69,7 +72,16 @@
             ipcRenderer.send('run-applescript', script);
         });
 
-        ipcRenderer.on('applescript-response', (event, response) => {
+        ipcRenderer.on('archive-response', (event, response) => {
+            document.getElementById('output').textContent = response;
+        });
+
+        document.getElementById('search-button').addEventListener('click', () => {
+            const searchString = document.getElementById('search-input').value;
+            ipcRenderer.send('search-string', searchString);
+        });
+
+        ipcRenderer.on('search-response', (event, response) => {
             document.getElementById('output').textContent = response;
         });
     </script>

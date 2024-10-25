@@ -152,6 +152,13 @@ h2 {
 
 }
 
+input {
+    border: 1px solid lightgray;
+    border-radius: 10px;
+    height: 30px;
+    font-size: 15px;
+}
+
 @keyframes glowing {
     0% { background-position: 0 0; }
     50% { background-position: 400% 0; }
