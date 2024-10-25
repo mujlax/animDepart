@@ -35,6 +35,7 @@
             <div class="buttons">
                 <button class="glow-on-hover glow-on-hover-dev" id="search-button">Проверить </br>наличие строки</button>
                 <button class="glow-on-hover glow-on-hover-dev" id="compress-button">Чпокнуть картинки </br>через TinyPNG</button>
+                <!-- <pre id="countMonths">500</pre> -->
                 <!-- <button class="glow-on-hover glow-on-hover-dev" id="archive-button">Проверить </br>наличие строки</button>
                 <button class="glow-on-hover glow-on-hover-dev" id="archive-button">Проверить </br>наличие строки</button> -->
             </div>
@@ -94,6 +95,7 @@
         // Получение ответа от сжатия изображений
         ipcRenderer.on('compress-response', (event, response) => {
             document.getElementById('output').textContent = response;
+            //document.getElementById('countMonths').textContent = compressionsThisMonth;
         });
     </script>
 </body>

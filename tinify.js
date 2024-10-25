@@ -7,6 +7,7 @@ const path = require('path');
 
 tinify.key = 'JvbcxzKlLyGscgvDrcSdpJxs5knj0r4n'; // Замените 'YOUR_API_KEY_HERE' на ваш реальный API ключ от Tinify
 
+
 ipcMain.on('compress-images', (event) => {
     // Выполняем AppleScript для получения путей к выбранным файлам и папкам
     const appleScript = `
