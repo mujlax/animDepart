@@ -4,47 +4,72 @@ const { exec } = require('child_process');
 const tinify = require('tinify');
 tinify.key = 'JvbcxzKlLyGscgvDrcSdpJxs5knj0r4n'; // Замените 'YOUR_API_KEY_HERE' на ваш реальный API ключ от Tinify
 
-ipcMain.on('compress-image', (event) => {
-    // Выполняем AppleScript для получения пути к выбранному файлу
+ipcMain.on('compress-images', (event) => {
+    // Выполняем AppleScript для получения путей к выбранным файлам
     const appleScript = `
         tell application "Finder"
             set selectedItems to selection
             if (count of selectedItems) is 0 then
-                display dialog "Выберите изображение в Finder." buttons {"OK"} default button 1
+                display dialog "Выберите изображения в Finder." buttons {"OK"} default button 1
                 return
             end if
-            set theFile to first item of selectedItems as alias
-            set theFilePath to POSIX path of theFile
-            return theFilePath
+            set filePaths to {}
+            repeat with theItem in selectedItems
+                -- Проверяем, является ли элемент файлом
+                try
+                    set theFilePath to POSIX path of (theItem as alias)
+                    copy theFilePath to the end of filePaths
+                end try
+            end repeat
+            return filePaths as string
         end tell
     `;
 
     // Выполняем osascript для запуска AppleScript
     exec(`osascript -e '${appleScript}'`, (error, stdout, stderr) => {
         if (error) {
-            console.error(`Ошибка получения пути к изображению: ${error.message}`);
-            event.reply('compress-response', 'Ошибка получения пути к изображению');
+            console.error(`Ошибка получения путей к изображениям: ${error.message}`);
+            event.reply('compress-response', 'Ошибка получения путей к изображениям');
             return;
         }
 
-        const imagePath = stdout.trim(); // Путь к выбранному изображению
-        if (!imagePath) {
-            event.reply('compress-response', 'Изображение не выбрано');
+        const imagePaths = stdout.trim().split(/(?<=.png)|(?<=.jpg)/g).filter(Boolean); // Разделяем по запятой и удаляем пустые строки
+        if (imagePaths.length === 0) {
+            event.reply('compress-response', 'Изображения не выбраны или пути невалидны');
             return;
         }
 
-        // Настраиваем выходной путь для сжатого изображения
-        const outputPath = imagePath.replace(/(\.\w+)$/, '-compressed$1');
+        // Сжатие каждого изображения последовательно
+        let compressedCount = 0;
+        const totalImages = imagePaths.length;
+        const errors = [];
 
-        // Используем Tinify API для сжатия изображения
-        tinify.fromFile(imagePath).toFile(outputPath, (compressError) => {
-            if (compressError) {
-                console.error(`Ошибка сжатия изображения: ${compressError.message}`);
-                event.reply('compress-response', 'Ошибка сжатия изображения');
+        imagePaths.forEach((imagePath) => {
+            if (!imagePath) {
+                errors.push('Путь к изображению пуст');
                 return;
             }
 
-            event.reply('compress-response', `Изображение успешно сжато и сохранено в ${outputPath}`);
+            // Настраиваем выходной путь для сжатого изображения
+            const outputPath = imagePath.replace(/(\.\w+)$/, '$1');
+
+            // Используем Tinify API для сжатия изображения
+            tinify.fromFile(imagePath).toFile(outputPath, (compressError) => {
+                if (compressError) {
+                    console.error(`Ошибка сжатия изображения ${imagePath}: ${compressError.message}`);
+                    errors.push(`Ошибка сжатия ${imagePath}`);
+                }
+
+                compressedCount++;
+                // Проверяем, если все изображения обработаны
+                if (compressedCount === totalImages) {
+                    if (errors.length === 0) {
+                        event.reply('compress-response', `Все изображения успешно сжаты (${totalImages})`);
+                    } else {
+                        event.reply('compress-response', `Сжатие завершено с ошибками: ${errors.join('; ')}`);
+                    }
+                }
+            });
         });
     });
 });

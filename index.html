@@ -86,12 +86,12 @@
             document.getElementById('output').textContent = response;
         });
 
-        // Обработчик для сжатия изображения
+        // Обработчик для сжатия изображений
         document.getElementById('compress-button').addEventListener('click', () => {
-            ipcRenderer.send('compress-image');
+            ipcRenderer.send('compress-images');
         });
 
-        // Получение ответа от сжатия изображения
+        // Получение ответа от сжатия изображений
         ipcRenderer.on('compress-response', (event, response) => {
             document.getElementById('output').textContent = response;
         });
