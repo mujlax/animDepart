@@ -5,6 +5,7 @@ const { exec } = require('child_process');
 // Импортируем наши модули
 //require('./archive');
 require('./search');
+require('./tinify');
 
 function createWindow() {
     const win = new BrowserWindow({

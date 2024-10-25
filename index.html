@@ -34,6 +34,7 @@
             <input value="<meta name=" type="text" id="search-input" placeholder="  Введите строку для поиска">
             <div class="buttons">
                 <button class="glow-on-hover glow-on-hover-dev" id="search-button">Проверить </br>наличие строки</button>
+                <button class="glow-on-hover glow-on-hover-dev" id="compress-button">Чпокнуть картинку</button>
                 <!-- <button class="glow-on-hover glow-on-hover-dev" id="archive-button">Проверить </br>наличие строки</button>
                 <button class="glow-on-hover glow-on-hover-dev" id="archive-button">Проверить </br>наличие строки</button> -->
             </div>
@@ -82,6 +83,16 @@
         });
 
         ipcRenderer.on('search-response', (event, response) => {
+            document.getElementById('output').textContent = response;
+        });
+
+        // Обработчик для сжатия изображения
+        document.getElementById('compress-button').addEventListener('click', () => {
+            ipcRenderer.send('compress-image');
+        });
+
+        // Получение ответа от сжатия изображения
+        ipcRenderer.on('compress-response', (event, response) => {
             document.getElementById('output').textContent = response;
         });
     </script>
