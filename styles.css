@@ -39,10 +39,21 @@ h2 {
     font-size: 15px;
 }
 
+body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
 .header {
     display: flex;
     justify-content: center;
 }
+
+.container {
+    padding: 10px 10px;
+}
+
 
 .section-1 {
     display: flex;
@@ -58,6 +69,44 @@ h2 {
     padding: 20px;
     justify-content: center;
     gap: 10px;
+}
+
+input {
+    border: 1px solid lightgray;
+    border-radius: 10px;
+    height: 30px;
+    font-size: 15px;
+}
+
+
+pre {
+    white-space: pre;
+}
+
+.credits {
+    justify-content: center;
+    margin: 40px auto 10px auto;
+}
+
+.credits__txt {
+    font-family: "Rubik", sans-serif;
+    font-weight: 300;
+    font-style: normal;
+    font-size: 15px;
+    color: lightgray;
+}
+
+.credits__txt a{
+    all: unset;
+    cursor: pointer;
+    transition: all 0.5s ease;
+}
+
+.credits__txt a:hover{
+    all: unset;
+    cursor: pointer;
+    color: lightseagreen;
+    transition: all 0.5s ease;
 }
 
 .glow-on-hover {
@@ -150,17 +199,6 @@ h2 {
     transition: opacity .3s ease-in-out;
     border-radius: 10px;
 
-}
-
-input {
-    border: 1px solid lightgray;
-    border-radius: 10px;
-    height: 30px;
-    font-size: 15px;
-}
-
-pre {
-    white-space: pre;
 }
 
 @keyframes glowing {
