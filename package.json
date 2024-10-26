@@ -5,8 +5,8 @@
   "scripts": {
     "start": "electron .",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "package-intel": "electron-packager . AnimDepartScripts --platform=darwin --arch=x64 --out=dist --overwrite",
-    "package-arm": "electron-packager . AnimDepartScripts --platform=darwin --arch=x64 --out=dist --overwrite"
+    "package-intel": "electron-packager . AnimDepartScripts --platform=darwin --arch=x64 --out=dist_intel --overwrite",
+    "package-arm": "electron-packager . AnimDepartScripts --platform=darwin --arch=x64 --out=dist_arm --overwrite"
   },
   "keywords": [],
   "author": "",

@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 tinify.key = 'JvbcxzKlLyGscgvDrcSdpJxs5knj0r4n'; // Замените 'YOUR_API_KEY_HERE' на ваш реальный API ключ от Tinify
-
+console.log(tinify.compressionCount);
 
 ipcMain.on('compress-images', (event) => {
     // Выполняем AppleScript для получения путей к выбранным файлам и папкам
@@ -101,12 +101,12 @@ ipcMain.on('compress-images', (event) => {
                     console.error(`Ошибка сжатия изображения ${imagePath}: ${compressError.message}`);
                     errors.push(`Ошибка сжатия ${imagePath}`);
                 }
-
+                //console.log("Compression count:", tinify.compressionCount);
                 compressedCount++;
                 // Проверяем, если все изображения обработаны
                 if (compressedCount === totalImages) {
                     if (errors.length === 0) {
-                        event.reply('compress-response', `Все изображения успешно сжаты (${totalImages})`);
+                        event.reply('compress-response', `Все изображения успешно сжаты (${totalImages})`, tinify.compressionCount);
                     } else {
                         event.reply('compress-response', `Сжатие завершено с ошибками: ${errors.join('; ')}`);
                     }
