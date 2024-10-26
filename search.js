@@ -4,33 +4,85 @@ const { exec } = require('child_process');
 const fs = require('fs');
 
 ipcMain.on('search-string', (event, searchString) => {
-    // Получаем путь к выделенному файлу с помощью osascript
-    exec('osascript -e \'tell application "Finder" to get POSIX path of (selection as alias)\'', (error, stdout, stderr) => {
+    // Выполняем AppleScript для получения путей к выбранным файлам
+    const appleScript = `
+        tell application "Finder"
+            set selectedItems to selection
+            if (count of selectedItems) is 0 then
+                display dialog "Выберите файлы в Finder." buttons {"OK"} default button 1
+                return
+            end if
+            set filePaths to {}
+            repeat with theItem in selectedItems
+                try
+                    set theFilePath to POSIX path of (theItem as alias)
+                    set theFilePath to theFilePath & ","
+                    copy theFilePath to the end of filePaths
+                end try
+            end repeat
+            return filePaths as string
+        end tell
+    `;
+
+    // Выполняем osascript для запуска AppleScript
+    exec(`osascript -e '${appleScript}'`, (error, stdout, stderr) => {
         if (error) {
-            console.error(`Ошибка получения выделенных файлов: ${error.message}`);
-            event.reply('search-response', 'Ошибка получения выделенных файлов');
+            console.error(`Ошибка получения путей к файлам: ${error.message}`);
+            event.reply('search-response', 'Ошибка получения путей к файлам');
             return;
         }
 
-        const filePath = stdout.trim(); // Получаем путь к выделенному файлу
-        if (!filePath) {
-            event.reply('search-response', 'Файл не выбран');
+        const filePaths = stdout.trim().split(",").filter(Boolean); // Массив путей к выбранным файлам
+        if (filePaths.length === 0) {
+            event.reply('search-response', 'Файлы не выбраны или пути невалидны');
             return;
         }
-            
-        // Читаем содержимое файла и ищем строку
-        fs.readFile(filePath, 'utf8', (err, data) => {
-            if (err) {
-                console.error(`Ошибка чтения файла: ${err.message}`);
-                event.reply('search-response', 'Ошибка чтения файла');
+
+        // Переменные для отслеживания результатов поиска
+        let filesWithMatch = [];
+        let filesWithoutMatch = [];
+        let filesProcessed = 0;
+        const totalFiles = filePaths.length;
+        const errors = [];
+
+        filePaths.forEach((filePath) => {
+            if (!filePath) {
+                errors.push('Путь к файлу пуст');
                 return;
             }
 
-            if (data.includes(searchString)) {
-                event.reply('search-response', `Строка найдена в файле: ${filePath}`);
-            } else {
-                event.reply('search-response', 'Строка не найдена');
-            }
+            // Чтение содержимого файла и поиск строки
+            fs.readFile(filePath, 'utf8', (readError, data) => {
+                if (readError) {
+                    console.error(`Ошибка чтения файла ${filePath}: ${readError.message}`);
+                    errors.push(`Ошибка чтения файла ${filePath}`);
+                } else if (data.includes(searchString)) {
+                    filesWithMatch.push(filePath);
+                } else {
+                    filesWithoutMatch.push(filePath);
+                }
+
+                filesProcessed++;
+                // Проверка, все ли файлы обработаны
+                if (filesProcessed === totalFiles) {
+                    if (errors.length === 0) {
+                        if (filesWithMatch.length > 0) {
+                            event.reply(
+                                'search-response',
+                                `Строка найдена в файлах: \r\n ${filesWithMatch.join(', \r\n')} \r\n \r\n Строка не найдена в файлах: \r\n ${filesWithoutMatch.join(', \r\n')}`
+                               
+                            );
+                        } else {
+                            event.reply('search-response', 'Строка не найдена ни в одном из файлов');
+                        }
+                    } else {
+                        event.reply(
+                            'search-response',
+                            `Поиск завершен с ошибками: ${errors.join('; ')}`
+                        );
+                    }
+                }
+            });
         });
     });
 });

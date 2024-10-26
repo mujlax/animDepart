@@ -159,6 +159,10 @@ input {
     font-size: 15px;
 }
 
+pre {
+    white-space: pre;
+}
+
 @keyframes glowing {
     0% { background-position: 0 0; }
     50% { background-position: 400% 0; }
