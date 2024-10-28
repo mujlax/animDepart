@@ -3,10 +3,8 @@ const path = require('path');
 const { exec } = require('child_process');
 
 
-// Импортируем наши модули
-//require('./archive');
-require('./search');
-require('./tinify');
+const platformAPI = require('./platform');
+
 
 
 function createWindow() {
@@ -39,17 +37,15 @@ app.on('activate', () => {
 });
 
 // Обработка вызова AppleScript
-ipcMain.on('run-applescript', (event, script) => {
-    exec(`osascript -e '${script}'`, (error, stdout, stderr) => {
-        if (error) {
-            console.error(`Ошибка: ${error.message}`);
-            return;
-        }
-        if (stderr) {
-            console.error(`Стандартная ошибка: ${stderr}`);
-            return;
-        }
-        console.log(`Результат: ${stdout}`);
-        event.reply('applescript-response', stdout);
-    });
+ipcMain.on('run-archive', async (event) => {
+    platformAPI.archiveSelectedItems(response => event.reply('archive-response', response));
 });
+
+ipcMain.on('run-search', async (event, searchString) => {
+    platformAPI.searchInFiles(searchString, response => event.reply('search-response', response));
+});
+
+ipcMain.on('run-compress', async (event) => {
+    platformAPI.compressImages(response => event.reply('compress-response', response));
+});
+

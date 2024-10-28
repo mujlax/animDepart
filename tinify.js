@@ -93,7 +93,7 @@ ipcMain.on('compress-images', (event) => {
             }
 
             // Настраиваем выходной путь для сжатого изображения
-            const outputPath = imagePath.replace(/(\.\w+)$/, '$1');
+            const outputPath = imagePath.replace(/(\.\w+)$/, '$compr1');
 
             // Используем Tinify API для сжатия изображения
             tinify.fromFile(imagePath).toFile(outputPath, (compressError) => {

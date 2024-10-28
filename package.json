@@ -17,6 +17,7 @@
     "electron-packager": "^17.1.2"
   },
   "dependencies": {
+    "archiver": "^7.0.1",
     "tinify": "^1.7.1"
   }
 }

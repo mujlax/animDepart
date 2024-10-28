@@ -53,55 +53,34 @@
     <script>
         const { ipcRenderer } = require('electron');
 
+        // Обработчик для кнопки архивирования
         document.getElementById('archive-button').addEventListener('click', () => {
-            const script = `
-            -- Получить выделенные элементы Finder
-                tell application "Finder"
-                    set selectedItems to selection
-                end tell
-
-                -- Пройти по каждому выделенному элементу
-                repeat with anItem in selectedItems
-                    -- Получить путь к выделенному элементу
-                    set itemPath to POSIX path of (anItem as alias)
-                    
-                    -- Получить имя папки/файла
-                    set itemName to name of anItem
-                    
-                    -- Определить путь для архива
-                    set archivePath to POSIX path of (itemPath & "/../" & itemName & ".zip")
-                    
-                    -- Архивировать содержимое папки без неё самой и исключить .DS_Store
-                    do shell script "cd " & quoted form of itemPath & " && zip -r " & quoted form of archivePath & " . -x '*.DS_Store' -x '*.fla'"
-                end repeat
-
-            `;
-
-            ipcRenderer.send('run-applescript', script);
+            ipcRenderer.send('run-archive');
         });
 
         ipcRenderer.on('archive-response', (event, response) => {
             document.getElementById('output').textContent = response;
         });
 
+        // Обработчик для кнопки поиска
         document.getElementById('search-button').addEventListener('click', () => {
             const searchString = document.getElementById('search-input').value;
-            ipcRenderer.send('search-string', searchString);
+            ipcRenderer.send('run-search', searchString);
         });
 
         ipcRenderer.on('search-response', (event, response) => {
             document.getElementById('output').textContent = response;
         });
 
-        // Обработчик для сжатия изображений
+        // Обработчик для кнопки сжатия изображений
         document.getElementById('compress-button').addEventListener('click', () => {
-            ipcRenderer.send('compress-images');
+            ipcRenderer.send('run-compress');
         });
 
-        // Получение ответа от сжатия изображений
-        ipcRenderer.on('compress-response', (event, response, countTinify) => {
+        ipcRenderer.on('compress-response', (event, response) => {
             document.getElementById('output').textContent = response;
-            document.getElementById('countMonths').textContent = countTinify + "/500 сжатий";
+            // Обновляем счётчик сжатий (предполагаем, что он возвращается)
+            document.getElementById('compress-count').textContent = response + "/500 сжатий";
         });
     </script>
 </body>
