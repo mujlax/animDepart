@@ -69,46 +69,46 @@ function searchInFiles(searchString, callback) {
         end tell
     `;
 
-    // exec(`osascript -e '${appleScript}'`, (error, stdout, stderr) => {
-    //     if (error) {
-    //         console.error(`Ошибка получения путей к файлам: ${error.message}`);
-    //         callback('Ошибка получения путей к файлам');
-    //         return;
-    //     }
+    exec(`osascript -e '${appleScript}'`, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Ошибка получения путей к файлам: ${error.message}`);
+            callback('Ошибка получения путей к файлам');
+            return;
+        }
 
-    //     const filePaths = stdout.trim().split(",").filter(Boolean);
-    //     if (filePaths.length === 0) {
-    //         callback('Файлы не выбраны или пути невалидны');
-    //         return;
-    //     }
+        const filePaths = stdout.trim().split(",").filter(Boolean);
+        if (filePaths.length === 0) {
+            callback('Файлы не выбраны или пути невалидны');
+            return;
+        }
 
-    //     let filesWithMatch = [];
-    //     let filesWithoutMatch = [];
-    //     let filesProcessed = 0;
-    //     const errors = [];
+        let filesWithMatch = [];
+        let filesWithoutMatch = [];
+        let filesProcessed = 0;
+        const errors = [];
 
-    //     filePaths.forEach((filePath) => {
-    //         fs.readFile(filePath, 'utf8', (readError, data) => {
-    //             if (readError) {
-    //                 errors.push(`Ошибка чтения файла ${filePath}`);
-    //             } else if (data.includes(searchString)) {
-    //                 filesWithMatch.push(filePath);
-    //             } else {
-    //                 filesWithoutMatch.push(filePath);
-    //             }
+        filePaths.forEach((filePath) => {
+            fs.readFile(filePath, 'utf8', (readError, data) => {
+                if (readError) {
+                    errors.push(`Ошибка чтения файла ${filePath}`);
+                } else if (data.includes(searchString)) {
+                    filesWithMatch.push(filePath);
+                } else {
+                    filesWithoutMatch.push(filePath);
+                }
 
-    //             filesProcessed++;
-    //             if (filesProcessed === filePaths.length) {
-    //                 callback(
-    //                     filesWithMatch.length > 0
-    //                         ? `Строка найдена в файлах: ${filesWithMatch.join(', ')}\nСтрока не найдена в файлах: ${filesWithoutMatch.join(', ')}`
-    //                         : 'Строка не найдена ни в одном из файлов',
-    //                     errors
-    //                 );
-    //             }
-    //         });
-    //     });
-    // });
+                filesProcessed++;
+                if (filesProcessed === filePaths.length) {
+                    callback(
+                        filesWithMatch.length > 0
+                            ? `Строка найдена в файлах: \r\n ${filesWithMatch.join(', \r\n')} \r\n \r\n Строка не найдена в файлах: \r\n ${filesWithoutMatch.join(', \r\n')}`
+                            : 'Строка не найдена ни в одном из файлов',
+                        errors
+                    );
+                }
+            });
+        });
+    });
 
     
 }
@@ -199,91 +199,6 @@ function compressImages(callback) {
             });
         });
     });
-
-    // exec(`osascript -e '${appleScript}'`, (error, stdout, stderr) => {
-    //     if (error) {
-    //         console.error(`Ошибка получения путей к файлам: ${error.message}`);
-    //         callback('Ошибка получения путей к файлам');
-    //         return;
-    //     }
-
-    //     const selectedPaths = stdout.trim().split(",").filter(Boolean); // Разделяем по запятой и удаляем пустые строки
-    //     if (selectedPaths.length === 0) {
-    //         callback('Файлы не выбраны или пути невалидны');
-    //         return;
-    //     }
-
-    //     // Рекурсивная функция для поиска всех изображений в папке
-    //     const getImagesFromFolder = (folderPath) => {
-    //         let images = [];
-    //         const items = fs.readdirSync(folderPath);
-    //         items.forEach((item) => {
-    //             const itemPath = path.join(folderPath, item);
-    //             const stats = fs.statSync(itemPath);
-    //             if (stats.isDirectory()) {
-    //                 // Рекурсивно обходим вложенные папки
-    //                 images = images.concat(getImagesFromFolder(itemPath));
-    //             } else if (stats.isFile() && /\.(jpe?g|png|gif)$/i.test(item)) {
-    //                 // Проверяем, является ли файл изображением (JPEG, PNG, GIF)
-    //                 images.push(itemPath);
-    //             }
-    //         });
-    //         return images;
-    //     };
-
-    //     // Получаем все изображения из выбранных папок и файлов
-    //     let imagePaths = [];
-    //     selectedPaths.forEach((filePath) => {
-    //         const stats = fs.statSync(filePath);
-    //         if (stats.isDirectory()) {
-    //             // Если это папка, получаем все изображения внутри нее
-    //             imagePaths = imagePaths.concat(getImagesFromFolder(filePath));
-    //         } else if (stats.isFile() && /\.(jpe?g|png|gif)$/i.test(filePath)) {
-    //             // Если это файл, и он является изображением, добавляем его в список
-    //             imagePaths.push(filePath);
-    //         }
-    //     });
-
-    //     if (imagePaths.length === 0) {
-    //         console.error(`Не найдены изображения для сжатия: ${error.message}`);
-    //         callback('Не найдены изображения для сжатия');
-    //         return;
-    //     }
-
-    //     // Сжатие каждого изображения последовательно
-    //     let compressedCount = 0;
-    //     const totalImages = imagePaths.length;
-    //     const errors = [];
-
-    //     imagePaths.forEach((imagePath) => {
-    //         if (!imagePath) {
-    //             errors.push('Путь к изображению пуст');
-    //             return;
-    //         }
-
-    //         // Настраиваем выходной путь для сжатого изображения
-    //         const outputPath = imagePath.replace(/(\.\w+)$/, '$1');
-
-    //         // Используем Tinify API для сжатия изображения
-    //         tinify.fromFile(imagePath).toFile(outputPath, (compressError) => {
-    //             if (compressError) {
-    //                 console.error(`Ошибка сжатия изображения ${imagePath}: ${compressError.message}`);
-    //                 errors.push(`Ошибка сжатия ${imagePath}`);
-    //             }
-    //             //console.log("Compression count:", tinify.compressionCount);
-    //             compressedCount++;
-    //             // Проверяем, если все изображения обработаны
-    //             if (compressedCount === totalImages) {
-    //                 callback(
-    //                     filesWithMatch.length > 0
-    //                         ? `Строка найдена в файлах: ${filesWithMatch.join(', ')}\nСтрока не найдена в файлах: ${filesWithoutMatch.join(', ')}`
-    //                         : 'Строка не найдена ни в одном из файлов',
-    //                     errors
-    //                 );
-    //             }
-    //         });
-    //     });
-    // });
 }
 
 module.exports = {
