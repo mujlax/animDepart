@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "archiver": "^7.0.1",
-    "tinify": "^1.7.1"
+    "tinify": "^1.7.1",
+    "uglify-js": "^3.19.3"
   }
 }

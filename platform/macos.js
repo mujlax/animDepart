@@ -3,6 +3,7 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const tinify = require('tinify');
+const uglifyJS = require('uglify-js');
 
 tinify.key = 'JvbcxzKlLyGscgvDrcSdpJxs5knj0r4n'; // Замените на ваш реальный API ключ от TinyPNG
 
@@ -184,6 +185,7 @@ function compressImages(callback) {
 
         let compressedCount = 0;
         const errors = [];
+        const res = [];
         
         imagePaths.forEach((imagePath) => {
             const outputPath = imagePath.replace(/(\.\w+)$/, '$1');
@@ -194,10 +196,81 @@ function compressImages(callback) {
                 }
                 compressedCount++;
                 if (compressedCount === imagePaths.length) {
-                    callback(errors.length === 0 ? `Все изображения успешно сжаты (${compressedCount})` : `Сжатие завершено с ошибками: ${errors.join('; ')}`);
+                    res.push(errors.length === 0 ? `Все изображения успешно сжаты (${compressedCount})` : `Сжатие завершено с ошибками: ${errors.join('; ')}`)
+                    res.push(tinify.compressionCount);
+                    callback(res);
                 }
             });
         });
+    });
+}
+
+/**
+ * Минимизирует выделенные JS файлы в Finder.
+ * @param {Function} callback - функция для обработки результата.
+ */
+function minifyJSFiles(callback) {
+    const appleScript = `
+        tell application "Finder"
+            set selectedItems to selection
+            if (count of selectedItems) is 0 then
+                display dialog "Выберите файлы .js в Finder." buttons {"OK"} default button 1
+                return
+            end if
+            set filePaths to {}
+            repeat with theItem in selectedItems
+                try
+                    set theFilePath to POSIX path of (theItem as alias)
+                    set theFilePath to theFilePath & ","
+                    copy theFilePath to the end of filePaths
+                end try
+            end repeat
+            return filePaths as string
+        end tell
+    `;
+
+    // Запускаем AppleScript для получения путей к файлам
+    exec(`osascript -e '${appleScript}'`, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Ошибка получения путей к файлам: ${error.message}`);
+            callback('Ошибка получения путей к файлам');
+            return;
+        }
+
+        const filePaths = stdout.trim().split(",").filter(Boolean);
+        if (filePaths.length === 0) {
+            callback('Файлы не выбраны или пути невалидны');
+            return;
+        }
+
+        let minifiedFiles = [];
+        const errors = [];
+
+        filePaths.forEach((filePath) => {
+            try {
+                // Читаем содержимое JS файла
+                const code = fs.readFileSync(filePath, 'utf8');
+
+                // Минифицируем код
+                const result = uglifyJS.minify(code);
+                if (result.error) throw result.error;
+
+                // Записываем минифицированный код в файл с суффиксом ".min.js"
+                const minFilePath = filePath.replace(/\.js$/, '.js');
+                fs.writeFileSync(minFilePath, result.code, 'utf8');
+
+                minifiedFiles.push(minFilePath);
+            } catch (err) {
+                console.error(`Ошибка минификации файла ${filePath}: ${err.message}`);
+                errors.push(`Ошибка минификации файла ${filePath}`);
+            }
+        });
+
+        if (errors.length > 0) {
+            callback(`Минификация завершена с ошибками: ${errors.join('; ')}`);
+        } else {
+            callback(`Минификация завершена успешно. Минифицированные файлы:\r\n ${minifiedFiles.join(', \r\n')}`);
+        }
     });
 }
 
@@ -205,4 +278,5 @@ module.exports = {
     archiveSelectedItems,
     searchInFiles,
     compressImages,
+    minifyJSFiles,
 };

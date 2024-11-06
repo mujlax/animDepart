@@ -49,3 +49,9 @@ ipcMain.on('run-compress', async (event) => {
     platformAPI.compressImages(response => event.reply('compress-response', response));
 });
 
+ipcMain.on('run-minify', async (event) => {
+    platformAPI.minifyJSFiles((response) => {
+        event.reply('minify-response', response);
+    });
+});
+
