@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const tinify = require('tinify');
 const uglifyJS = require('uglify-js');
+const logCompressionToSheet = require('./logCompressionToSheet');
 
 tinify.key = 'JvbcxzKlLyGscgvDrcSdpJxs5knj0r4n'; // Замените на ваш реальный API ключ от TinyPNG
 
@@ -13,27 +14,22 @@ tinify.key = 'JvbcxzKlLyGscgvDrcSdpJxs5knj0r4n'; // Замените на ваш
  */
 function archiveSelectedItems(callback) {
     const appleScript = `
-            -- Получить выделенные элементы Finder
-                tell application "Finder"
-                    set selectedItems to selection
-                end tell
+        tell application "Finder"
+            set selectedItems to selection
+        end tell
 
-                -- Пройти по каждому выделенному элементу
-                repeat with anItem in selectedItems
-                    -- Получить путь к выделенному элементу
-                    set itemPath to POSIX path of (anItem as alias)
-                    
-                    -- Получить имя папки/файла
-                    set itemName to name of anItem
-                    
-                    -- Определить путь для архива
-                    set archivePath to POSIX path of (itemPath & "/../" & itemName & ".zip")
-                    
-                    -- Архивировать содержимое папки без неё самой и исключить .DS_Store
-                    do shell script "cd " & quoted form of itemPath & " && zip -r " & quoted form of archivePath & " . -x '*.DS_Store' -x '*.fla'"
-                end repeat
+        set archivedCount to 0
 
-            `;
+        repeat with anItem in selectedItems
+            set itemPath to POSIX path of (anItem as alias)
+            set itemName to name of anItem
+            set archivePath to POSIX path of (itemPath & "/../" & itemName & ".zip")
+            do shell script "cd " & quoted form of itemPath & " && zip -r " & quoted form of archivePath & " . -x '*.DS_Store' -x '*.fla'"
+            set archivedCount to archivedCount + 1
+        end repeat
+
+        return archivedCount
+    `;
 
     exec(`osascript -e '${appleScript}'`, (error, stdout, stderr) => {
         if (error) {
@@ -41,7 +37,14 @@ function archiveSelectedItems(callback) {
             callback('Ошибка архивирования');
             return;
         }
-        callback(stdout);
+
+        // Парсим количество архивированных папок из stdout
+        const archivedFoldersCount = parseInt(stdout.trim(), 10) || 0;
+        
+        // Логируем результат в Google Sheets
+        logCompressionToSheet(archivedFoldersCount, "Архивация");
+        
+        callback(`Архивирование завершено успешно. Архивировано папок: ${archivedFoldersCount}`);
     });
 }
 
@@ -199,6 +202,7 @@ function compressImages(callback) {
                     res.push(errors.length === 0 ? `Все изображения успешно сжаты (${compressedCount})` : `Сжатие завершено с ошибками: ${errors.join('; ')}`)
                     res.push(tinify.compressionCount);
                     callback(res);
+                    logCompressionToSheet(compressedCount, "Сжатие изображения");
                 }
             });
         });
@@ -269,8 +273,10 @@ function minifyJSFiles(callback) {
         if (errors.length > 0) {
             callback(`Минификация завершена с ошибками: ${errors.join('; ')}`);
         } else {
+            logCompressionToSheet(minifiedFiles.length, "Минификация");
             callback(`Минификация завершена успешно. Минифицированные файлы:\r\n ${minifiedFiles.join(', \r\n')}`);
         }
+    
     });
 }
 

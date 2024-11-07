@@ -1,3 +1,4 @@
 node_modules
 dist_arm
 dist_intel
+google-sheets-credentials.json

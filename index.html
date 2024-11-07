@@ -16,7 +16,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Animation Department Scripts <span class="txtVersion" style="color: lightgray;">ver 0.3</span></h1>
+            <h1>Animation Department Scripts <span class="txtVersion" style="color: lightgray;">ver 0.3.1</span></h1>
         </div>
         <div class="section-1">
             <h2>Работа с папками</h2>
@@ -25,7 +25,7 @@
                     <i class="fa-regular fa-file-zipper fa-xl"></i> Архивировать </br>выделенные папки
                 </button>
                 <button style="" class="glow-on-hover" id="compress-button">
-                    <i class="fa-regular fa-file-zipper fa-xl"></i>Чпокнуть картинки </br>через TinyPNG
+                    <i class="fa-regular fa-file-image fa-xl"></i>Чпокнуть картинки </br>через TinyPNG
                     <p style="font-size: 13px; font-style: italic;" id="countMonths">0/500</p>
                 </button>
             </div>
@@ -38,7 +38,7 @@
             <input value="<meta name=" type="text" id="search-input" placeholder="  Введите строку для поиска">
             <div class="buttons">
                 <button class="glow-on-hover glow-on-hover-dev" id="search-button">Проверить </br>наличие строки</button>
-                
+                <button class="glow-on-hover glow-on-hover-dev" id="stats-button">Показать общую статистику</button>
                 <button class="glow-on-hover glow-on-hover-dev" id="minify-button">Минимизировать </br> выделенные файлы .js</button>
                 <!-- <button class="glow-on-hover glow-on-hover-dev" id="archive-button">Проверить </br>наличие строки</button>
                 <button class="glow-on-hover glow-on-hover-dev" id="archive-button">Проверить </br>наличие строки</button> -->
@@ -95,6 +95,7 @@
         ipcRenderer.on('minify-response', (event, response) => {
             document.getElementById('output').textContent = response;
         });
+
         
     </script>
 </body>

@@ -2,7 +2,6 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const { exec } = require('child_process');
 
-
 const platformAPI = require('./platform');
 
 
@@ -54,4 +53,5 @@ ipcMain.on('run-minify', async (event) => {
         event.reply('minify-response', response);
     });
 });
+
 
