@@ -5,15 +5,15 @@
   "scripts": {
     "start": "electron .",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "package-intel": "electron-packager . AnimDepartScripts --platform=darwin --arch=x64 --out=dist_intel --overwrite",
-    "package-arm": "electron-packager . AnimDepartScripts --platform=darwin --arch=x64 --out=dist_arm --overwrite"
+    "package-intel": "electron-packager . AnimDepartScripts --platform=darwin --arch=x64 --out=dist_intel --overwrite --ignore=dist_arm",
+    "package-arm": "electron-packager . AnimDepartScripts --platform=darwin --arch=x64 --out=dist_arm --overwrite --ignore=dist_intel"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "electron": "^33.0.2",
+    "electron": "^33.2.0",
     "electron-builder": "^25.1.8",
     "electron-packager": "^17.1.2",
     "size-limit": "^11.1.6"
