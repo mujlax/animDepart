@@ -54,4 +54,8 @@ ipcMain.on('run-minify', async (event) => {
     });
 });
 
-
+ipcMain.on('replace-images-base64', (event) => {
+    platformAPI.replaceImagesWithBase64((response) => {
+        event.reply('replace-images-response', response);
+    });
+});

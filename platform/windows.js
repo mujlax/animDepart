@@ -5,32 +5,69 @@ const archiver = require('archiver');
 const tinify = require('tinify');
 tinify.key = 'JvbcxzKlLyGscgvDrcSdpJxs5knj0r4n';
 
-function archiveSelectedItems(selectedItems) {
-    selectedItems.forEach(item => {
-        const output = fs.createWriteStream(`${item}.zip`);
-        const archive = archiver('zip', { zlib: { level: 9 } });
+/**
+ * Архивирует выделенные папки в Проводнике Windows.
+ * @param {Function} callback - Функция для обработки результата.
+ */
+function archiveSelectedItems(callback) {
+    // Используем PowerShell для получения выбранных путей в Проводнике
+    const powershellCommand = `
+        [System.Reflection.Assembly]::LoadWithPartialName("System.windows.forms") | Out-Null
+        $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+        $dialog.Description = "Выберите папки для архивации"
+        $dialog.ShowNewFolderButton = $false
+        $result = $dialog.ShowDialog()
+        if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
+            $dialog.SelectedPath
+        } else {
+            Write-Output "Отмена"
+        }
+    `;
 
-        archive.pipe(output);
-        archive.directory(item, false);
-        archive.finalize();
-    });
-}
+    exec(`powershell.exe -command "${powershellCommand}"`, (error, stdout, stderr) => {
+        if (error || stderr) {
+            console.error(`Ошибка при получении путей: ${error || stderr}`);
+            callback("Ошибка при получении путей");
+            return;
+        }
 
-function searchInFiles(searchString, filePaths) {
-    // аналогичная логика поиска в содержимом файлов на Windows
-}
+        const selectedPaths = stdout.trim().split('\n').filter(Boolean); // Массив путей к папкам
 
-function compressImages(imagePaths) {
-    imagePaths.forEach(imagePath => {
-        const outputPath = path.join(path.dirname(imagePath), `compressed_${path.basename(imagePath)}`);
-        tinify.fromFile(imagePath).toFile(outputPath, err => {
-            if (err) console.error('Error compressing image:', err);
+        if (selectedPaths.length === 0) {
+            callback("Нет выбранных папок для архивации");
+            return;
+        }
+
+        // Архивируем каждую выбранную папку
+        let archivedCount = 0;
+
+        selectedPaths.forEach((folderPath) => {
+            const folderName = path.basename(folderPath);
+            const outputZipPath = path.join(path.dirname(folderPath), `${folderName}.zip`);
+
+            // Создаем поток записи для архива
+            const output = fs.createWriteStream(outputZipPath);
+            const archive = archiver('zip', {
+                zlib: { level: 9 } // Уровень сжатия
+            });
+
+            output.on('close', () => {
+                archivedCount++;
+                if (archivedCount === selectedPaths.length) {
+                    callback(`Архивирование завершено успешно. Архивировано папок: ${archivedCount}`);
+                }
+            });
+
+            archive.on('error', (err) => {
+                console.error(`Ошибка архивации папки ${folderName}: ${err.message}`);
+                callback(`Ошибка архивации папки ${folderName}`);
+            });
+
+            archive.pipe(output);
+            archive.directory(folderPath, false);
+            archive.finalize();
         });
     });
 }
 
-module.exports = {
-    archiveSelectedItems,
-    searchInFiles,
-    compressImages,
-};
+module.exports = archiveSelectedItems;

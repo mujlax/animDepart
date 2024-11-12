@@ -280,9 +280,106 @@ function minifyJSFiles(callback) {
     });
 }
 
+/**
+ * Заменяет изображения в index.html на Base64-строкиии.
+ * @param {Function} callback - функция для обработки результата.
+ */
+function replaceImagesWithBase64(callback) {
+    // AppleScript для получения выбранных папок в Finder
+    const appleScript = `
+    tell application "Finder"
+    set selectedItems to selection
+    if (count of selectedItems) is 0 then
+        display dialog "Выберите файлы или папки в Finder." buttons {"OK"} default button 1
+        return
+    end if
+    set filePaths to {}
+    repeat with theItem in selectedItems
+        try
+            set theFilePath to POSIX path of (theItem as alias)
+            set theFilePath to theFilePath & ","
+            copy theFilePath to the end of filePaths
+        end try
+    end repeat
+    return filePaths as string
+end tell
+    `;
+
+    exec(`osascript -e '${appleScript}'`, (error, stdout) => {
+        if (error) {
+            console.error("Ошибка при получении выбранных папок:", error);
+            callback("Ошибка при получении выбранных папок");
+            return;
+        }
+
+        // Разделяем пути к папкам
+        const folderPaths = stdout.trim().split(",").map(p => p.trim());
+
+        if (folderPaths.length === 0) {
+            callback("Нет выбранных папок для обработки");
+            return;
+        }
+
+        let processedCount = 0;
+
+        // Обработка каждой папки
+        folderPaths.forEach(folderPath => {
+            const htmlFilePath = path.join(folderPath, 'index.html');
+            const imageFiles = [
+                { fileName: 'index_atlas_NP_1.jpg', id: 'index_atlas_NP_1' },
+                { fileName: 'index_atlas_P_1.png', id: 'index_atlas_P_1' }
+            ];
+
+            // Проверка наличия index.html
+            if (!fs.existsSync(htmlFilePath)) {
+                console.warn(`Файл index.html не найден в папке ${folderPath}`);
+                processedCount++;
+                if (processedCount === folderPaths.length) {
+                    callback("Обработка завершена. Не все папки содержат файл index.html.");
+                }
+                return;
+            }
+
+            // Чтение содержимого index.html
+            let htmlContent = fs.readFileSync(htmlFilePath, 'utf8');
+
+            // Обработка каждого изображения
+            imageFiles.forEach(image => {
+                const imagePath = path.join(folderPath, image.fileName);
+
+                // Проверка существования изображения
+                if (fs.existsSync(imagePath)) {
+                    // Преобразование изображения в Base64
+                    const imageBase64 = fs.readFileSync(imagePath).toString('base64');
+                    const base64String = `data:image/${path.extname(image.fileName).slice(1)};base64,${imageBase64}`;
+
+                    // Формирование строки для поиска и замены
+                    const searchPattern = `{src:"./${image.fileName}", id:"${image.id}"}`;
+                    const replacePattern = `{type:"image", src:"${base64String}", id:"${image.id}"}`;
+
+                    // Замена в HTML
+                    htmlContent = htmlContent.replace(searchPattern, replacePattern);
+                    logCompressionToSheet(archivedFoldersCount, "toBase64");
+                } else {
+                    console.warn(`Изображение ${image.fileName} не найдено в папке ${folderPath}`);
+                }
+            });
+
+            // Запись измененного содержимого обратно в index.html
+            fs.writeFileSync(htmlFilePath, htmlContent, 'utf8');
+            processedCount++;
+
+            if (processedCount === folderPaths.length) {
+                callback("Замена изображений на Base64 завершена успешно");
+            }
+        });
+    });
+}
+
 module.exports = {
     archiveSelectedItems,
     searchInFiles,
     compressImages,
     minifyJSFiles,
+    replaceImagesWithBase64,
 };
