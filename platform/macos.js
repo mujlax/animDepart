@@ -359,7 +359,7 @@ end tell
 
                     // Замена в HTML
                     htmlContent = htmlContent.replace(searchPattern, replacePattern);
-                    logCompressionToSheet(archivedFoldersCount, "toBase64");
+                    logCompressionToSheet(1, "toBase64");
                 } else {
                     console.warn(`Изображение ${image.fileName} не найдено в папке ${folderPath}`);
                 }
