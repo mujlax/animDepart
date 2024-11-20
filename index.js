@@ -4,8 +4,9 @@ const { exec } = require('child_process');
 const fs = require('fs');
 
 const platformAPI = require('./platform');
+const logCompressionToSheet = require('./platform/statistic/logCompressionToSheet');
 
-const { processAvitoNaAvito } = require('./processAvitoNaAvito');
+const { processAvitoNaAvito } = require('./processes/processAvitoNaAvito');
 
 
 
@@ -67,6 +68,7 @@ ipcMain.on('process-folders', async (event, { platform, paths }) => {
     try {
         console.log(`Выбрана площадка: ${platform}`);
         console.log(`Пути папок: ${paths}`);
+        logCompressionToSheet(paths.length, "Прошивка: " + platform);
 
         for (const folderPath of paths) {
             if (platform === 'АвитоНаАвито') {

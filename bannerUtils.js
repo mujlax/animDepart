@@ -67,8 +67,8 @@ async function compressImages(imagePaths) {
     );
 }
 
-function replaceImagesWithBase64(folderPath) {
-    const htmlFilePath = path.join(folderPath, 'index.html');
+async function replaceImagesWithBase64(folderPath) {
+    const htmlFilePath = path.join(folderPath, 'index.js');
     const imageFiles = [
         { fileName: 'index_atlas_NP_1.jpg', id: 'index_atlas_NP_1' },
         { fileName: 'index_atlas_P_1.png', id: 'index_atlas_P_1' }
@@ -105,9 +105,28 @@ function replaceImagesWithBase64(folderPath) {
     fs.writeFileSync(htmlFilePath, htmlContent, 'utf8');
 }
 
+function copyFolderSync(source, target) {
+    if (!fs.existsSync(target)) {
+        fs.mkdirSync(target, { recursive: true });
+    }
+
+    const items = fs.readdirSync(source);
+    for (const item of items) {
+        const sourcePath = path.join(source, item);
+        const targetPath = path.join(target, item);
+
+        if (fs.lstatSync(sourcePath).isDirectory()) {
+            copyFolderSync(sourcePath, targetPath);
+        } else {
+            fs.copyFileSync(sourcePath, targetPath);
+        }
+    }
+}
+
 module.exports = {
     minifyJSFiles,
     compressImages,
     replaceImagesWithBase64,
-    inlineJavaScript
+    inlineJavaScript,
+    copyFolderSync
 };

@@ -57,9 +57,11 @@
     </div>
 
     <script>
+        
         const dropZone = document.getElementById('drop-zone');
         const output = document.getElementById('output');
         const platformSelect = document.getElementById('platform');
+
 
         // Подсвечиваем область при перетаскивании
         dropZone.addEventListener('dragover', (e) => {
@@ -101,6 +103,7 @@
             output.textContent = `Выбрана площадка: ${platform}\nОбрабатываем папки...\n`;
             output.textContent = `Пути перетащенных папок:\n${folderPaths.join('\n')}`;
 
+   
             // Отправляем пути и выбранную платформу в основной процесс
             window.electron.processFolders({ platform, paths: folderPaths });
 

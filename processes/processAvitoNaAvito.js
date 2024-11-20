@@ -1,11 +1,18 @@
 const fs = require('fs');
 const path = require('path');
-const { minifyJSFiles, compressImages, replaceImagesWithBase64, inlineJavaScript } = require('./bannerUtils');
-
+const { minifyJSFiles, compressImages, replaceImagesWithBase64, inlineJavaScript, copyFolderSync } = require('../bannerUtils');
 
 async function processAvitoNaAvito(folderPath) {
     console.log(`Обрабатываем папку: ${folderPath}`);
-    const files = fs.readdirSync(folderPath);
+
+    const parentDirectory = path.dirname(folderPath);
+    const folderName = path.basename(folderPath);
+    const releasePath = path.join(parentDirectory, 'release', folderName);
+
+    copyFolderSync(folderPath, releasePath);
+    console.log(`Папка скопирована в ${releasePath}`);
+
+    const files = fs.readdirSync(releasePath);
     const htmlFile = files.find(file => file === 'index.html');
     const jsFile = files.find(file => file === 'index.js');
     const images = files.filter(file => /\.(jpe?g|png)$/i.test(file));
@@ -14,18 +21,15 @@ async function processAvitoNaAvito(folderPath) {
         throw new Error('Файл index.html или index.js не найден в папке');
     }
 
-    const htmlPath = path.join(folderPath, htmlFile);
-    const jsPath = path.join(folderPath, jsFile);
-
-   // await minifyJSFiles([jsPath]);
-    await compressImages(images.map(img => path.join(folderPath, img)));
-   
+    const htmlPath = path.join(releasePath, htmlFile);
+    const jsPath = path.join(releasePath, jsFile);
+    
+    await compressImages(images.map(img => path.join(releasePath, img)));
+    await replaceImagesWithBase64(releasePath);
+    await minifyJSFiles([jsPath]);
     inlineJavaScript(htmlPath, jsPath);
-
-    replaceImagesWithBase64(folderPath);
-
    
-    const sizeMatch = folderPath.match(/(\d+)x(\d+)/);
+    const sizeMatch = releasePath.match(/(\d+)x(\d+)/);
     let htmlContent = fs.readFileSync(htmlPath, 'utf8');
     if (sizeMatch) {
         const [_, width, height] = sizeMatch;
