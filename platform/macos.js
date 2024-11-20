@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const tinify = require('tinify');
 const uglifyJS = require('uglify-js');
-const logCompressionToSheet = require('./logCompressionToSheet');
+const logCompressionToSheet = require('./statistic/logCompressionToSheet');
 
 tinify.key = 'JvbcxzKlLyGscgvDrcSdpJxs5knj0r4n'; // Замените на ваш реальный API ключ от TinyPNG
 

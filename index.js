@@ -1,8 +1,11 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const { exec } = require('child_process');
+const fs = require('fs');
 
 const platformAPI = require('./platform');
+
+const { processAvitoNaAvito } = require('./processAvitoNaAvito');
 
 
 
@@ -13,7 +16,7 @@ function createWindow() {
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: true,
-            contextIsolation: false,
+            contextIsolation: true,
         },
     });
 
@@ -59,3 +62,25 @@ ipcMain.on('replace-images-base64', (event) => {
         event.reply('replace-images-response', response);
     });
 });
+
+ipcMain.on('process-folders', async (event, { platform, paths }) => {
+    try {
+        console.log(`Выбрана площадка: ${platform}`);
+        console.log(`Пути папок: ${paths}`);
+
+        for (const folderPath of paths) {
+            if (platform === 'АвитоНаАвито') {
+                await processAvitoNaAvito(folderPath);
+                event.reply('process-folders-response', `Папка обработана: ${folderPath}`);
+            } else {
+                event.reply('process-folders-response', `Платформа ${platform} пока не поддерживается.`);
+            }
+        }
+
+        event.reply('process-folders-response', 'Обработка завершена!');
+    } catch (error) {
+        console.error('Ошибка при обработке папок:', error);
+        event.reply('process-folders-response', `Ошибка: ${error.message}`);
+    }
+});
+

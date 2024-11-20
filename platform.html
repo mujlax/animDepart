@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Прошивка баннеров</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+        }
+        .platform-select {
+            margin-bottom: 20px;
+        }
+        .drop-zone {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            cursor: pointer;
+        }
+        .drop-zone.dragover {
+            border-color: #6c6;
+            color: #6c6;
+        }
+        .output {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="./index.html">Назад</a>
+        <h1>Прошивка баннеров под площадки</h1>
+        <div class="platform-select">
+            <label for="platform">Выберите площадку:</label>
+            <select id="platform">
+                <option value="АвитоНаАвито">АвитоНаАвито</option>
+                <!-- Вы можете добавить другие площадки здесь -->
+            </select>
+        </div>
+        <div class="drop-zone" id="drop-zone">
+            Перетащите папки сюда
+        </div>
+        <div class="output" id="output">
+            Вывод работы будет здесь.
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const output = document.getElementById('output');
+        const platformSelect = document.getElementById('platform');
+
+        // Подсвечиваем область при перетаскивании
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        // Убираем подсветку, если мышь покинула область
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        // Обрабатываем события "Drop"
+        dropZone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+
+            const items = [...e.dataTransfer.items];
+            const folderPaths = [];
+
+            // Асинхронно получаем пути с использованием webUtils
+            for (const item of items) {
+                const file = item.getAsFile();
+                if (file) {
+                    const filePath = await window.electron.getFilePath(file); // Получаем путь через webUtils
+                    if (filePath) {
+                        folderPaths.push(filePath);
+                    }
+                }
+            }
+
+            if (folderPaths.length === 0) {
+                output.textContent = 'Перетащенные элементы не содержат папок.';
+                console.log('Не найдены папки');
+                return;
+            }
+
+            const platform = platformSelect.value;
+            output.textContent = `Выбрана площадка: ${platform}\nОбрабатываем папки...\n`;
+            output.textContent = `Пути перетащенных папок:\n${folderPaths.join('\n')}`;
+
+            // Отправляем пути и выбранную платформу в основной процесс
+            window.electron.processFolders({ platform, paths: folderPaths });
+
+            // Слушаем ответы от основного процесса
+            window.electron.onProcessFoldersResponse((response) => {
+                output.textContent += response + '\n';
+            });
+        });
+    </script>
+</body>
+</html>
