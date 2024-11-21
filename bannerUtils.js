@@ -4,6 +4,7 @@ const archiver = require('archiver');
 const tinify = require('tinify');
 const { minify } = require('uglify-js');
 const { minimatch } = require('minimatch')
+const logCompressionToSheet = require('./platform/statistic/logCompressionToSheet');
 
 // Задайте свой API-ключ для TinyPNG
 tinify.key = 'JvbcxzKlLyGscgvDrcSdpJxs5knj0r4n'; // Замените на ваш реальный API ключ от TinyPNG
@@ -49,6 +50,7 @@ async function minifyJSFiles(filePaths) {
             console.error(`Ошибка минификации ${filePath}: ${result.error}`);
         } else {
             fs.writeFileSync(filePath, result.code, 'utf8');
+            logCompressionToSheet(1, "Минификация");
             console.log(`Минификация завершена для ${filePath}`);
         }
     });
@@ -84,6 +86,9 @@ async function replaceImagesWithBase64(folderPath) {
     imageFiles.forEach(image => {
         const imagePath = path.join(folderPath, image.fileName);
 
+       
+
+        
         // Проверка существования изображения
         if (fs.existsSync(imagePath)) {
             // Преобразование изображения в Base64
@@ -97,6 +102,7 @@ async function replaceImagesWithBase64(folderPath) {
             // Замена в HTML
             htmlContent = htmlContent.replace(searchPattern, replacePattern);
             console.log(`Изображение ${image.fileName} заменено на Base64 в ${htmlFilePath}`);
+            logCompressionToSheet(2, "toBase64");
         } else {
             console.warn(`Изображение ${image.fileName} не найдено в папке ${folderPath}`);
         }
@@ -144,6 +150,7 @@ async function archiveFolder (folderPath) {
     });
     archive.finalize();
     
+    logCompressionToSheet(1, "Архивация");
 }
 
 async function deleteFiles(folderPath, filePatterns) {
@@ -170,6 +177,30 @@ async function deleteFiles(folderPath, filePatterns) {
     });
 }
 
+async function insertScriptAfterMarker(htmlPath, marker, scriptToInsert) {
+    if (!fs.existsSync(htmlPath)) {
+        throw new Error(`Файл ${htmlPath} не найден`);
+    }
+
+    // Чтение содержимого файла
+    let htmlContent = fs.readFileSync(htmlPath, 'utf8');
+
+    // Поиск маркера и вставка строки
+    const markerIndex = htmlContent.indexOf(marker);
+    if (markerIndex === -1) {
+        throw new Error(`Маркер "${marker}" не найден в ${htmlPath}`);
+    }
+
+    const insertPosition = markerIndex + marker.length;
+    htmlContent = htmlContent.slice(0, insertPosition) +
+        `\n${scriptToInsert}\n` +
+        htmlContent.slice(insertPosition);
+
+    // Запись измененного содержимого обратно в файл
+    fs.writeFileSync(htmlPath, htmlContent, 'utf8');
+    console.log(`Строка успешно вставлена в ${htmlPath}`);
+}
+
 module.exports = {
     minifyJSFiles,
     compressImages,
@@ -177,5 +208,6 @@ module.exports = {
     inlineJavaScript,
     copyFolderSync,
     archiveFolder,
-    deleteFiles
+    deleteFiles,
+    insertScriptAfterMarker
 };

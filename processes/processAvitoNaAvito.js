@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const archiver = require('archiver');
-const { minifyJSFiles, compressImages, replaceImagesWithBase64, inlineJavaScript, copyFolderSync, archiveFolder, deleteFiles } = require('../bannerUtils');
+const { minifyJSFiles, compressImages, replaceImagesWithBase64, inlineJavaScript, copyFolderSync, archiveFolder, deleteFiles, insertScriptAfterMarker } = require('../bannerUtils');
 
 
 
@@ -26,7 +26,11 @@ async function processAvitoNaAvito(folderPath) {
 
     const htmlPath = path.join(releasePath, htmlFile);
     const jsPath = path.join(releasePath, jsFile);
-    
+
+    const marker = '<!-- write your code here -->';
+    const scriptToInsert = '<script type="text/javascript" src="https://tube.buzzoola.com/new/js/lib/banner.js"></script>';
+
+    await insertScriptAfterMarker(htmlPath, marker, scriptToInsert);
     await compressImages(images.map(img => path.join(releasePath, img)));
     await replaceImagesWithBase64(releasePath);
     await minifyJSFiles([jsPath]);
@@ -41,6 +45,7 @@ async function processAvitoNaAvito(folderPath) {
             `<meta charset="UTF-8">\n<meta name="ad.size" content="width=${width},height=${height}">`
         );
     }
+    
 
     htmlContent = htmlContent.replace(
         /<div id="animation_container"([\s\S]*?)<\/div>/,

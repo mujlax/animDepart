@@ -7,7 +7,7 @@ const platformAPI = require('./platform');
 const logCompressionToSheet = require('./platform/statistic/logCompressionToSheet');
 
 const { processAvitoNaAvito } = require('./processes/processAvitoNaAvito');
-
+const { processYandexRTB } = require('./processes/processYandexRTB');
 
 
 function createWindow() {
@@ -74,8 +74,9 @@ ipcMain.on('process-folders', async (event, { platform, paths }) => {
             if (platform === 'АвитоНаАвито') {
                 await processAvitoNaAvito(folderPath);
                 event.reply('process-folders-response', `Папка обработана: ${folderPath}`);
-            } else {
-                event.reply('process-folders-response', `Платформа ${platform} пока не поддерживается.`);
+            } else if (platform === 'YandexRTB') {
+                await processYandexRTB(folderPath);
+                event.reply('process-folders-response', `Папка обработана: ${folderPath}`);
             }
         }
 
