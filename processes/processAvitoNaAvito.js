@@ -1,6 +1,9 @@
 const fs = require('fs');
 const path = require('path');
-const { minifyJSFiles, compressImages, replaceImagesWithBase64, inlineJavaScript, copyFolderSync } = require('../bannerUtils');
+const archiver = require('archiver');
+const { minifyJSFiles, compressImages, replaceImagesWithBase64, inlineJavaScript, copyFolderSync, archiveFolder, deleteFiles } = require('../bannerUtils');
+
+
 
 async function processAvitoNaAvito(folderPath) {
     console.log(`Обрабатываем папку: ${folderPath}`);
@@ -50,6 +53,9 @@ async function processAvitoNaAvito(folderPath) {
     );
 
     fs.writeFileSync(htmlPath, htmlContent, 'utf8');
+    
+    await deleteFiles(releasePath, ['index.js', 'index_atlas_P_1.png', 'index_atlas_NP_1.jpg', '*.fla']);
+    await archiveFolder(releasePath);
 }
 
 module.exports = {

@@ -3,6 +3,7 @@ const path = require('path');
 const archiver = require('archiver');
 const tinify = require('tinify');
 const { minify } = require('uglify-js');
+const { minimatch } = require('minimatch')
 
 // Задайте свой API-ключ для TinyPNG
 tinify.key = 'JvbcxzKlLyGscgvDrcSdpJxs5knj0r4n'; // Замените на ваш реальный API ключ от TinyPNG
@@ -123,10 +124,58 @@ function copyFolderSync(source, target) {
     }
 }
 
+async function archiveFolder (folderPath) {
+
+    const folderName = path.basename(folderPath);
+    const outputZipPath = path.join(path.dirname(folderPath), `${folderName}.zip`);
+
+    // Создаем поток записи для архива
+    const output = fs.createWriteStream(outputZipPath);
+    const archive = archiver('zip', {
+        zlib: { level: 9 } // Уровень сжатия
+    });
+
+
+
+    archive.pipe(output);
+    archive.glob('**/*', {
+        cwd: folderPath,
+        ignore: ['**/*.fla', '**/.DS_Store'] // Игнорируем файлы с расширениями
+    });
+    archive.finalize();
+    
+}
+
+async function deleteFiles(folderPath, filePatterns) {
+    if (!fs.existsSync(folderPath)) {
+        console.error(`Папка не найдена: ${folderPath}`);
+        return;
+    }
+
+    const files = fs.readdirSync(folderPath);
+
+    filePatterns.forEach(pattern => {
+        files.forEach(file => {
+            // Используем minimatch для проверки соответствия шаблону
+            if (minimatch(file, pattern)) {
+                const filePath = path.join(folderPath, file);
+                try {
+                    fs.unlinkSync(filePath); // Удаляем файл
+                    console.log(`Удален файл: ${filePath}`);
+                } catch (err) {
+                    console.error(`Ошибка удаления файла ${filePath}: ${err.message}`);
+                }
+            }
+        });
+    });
+}
+
 module.exports = {
     minifyJSFiles,
     compressImages,
     replaceImagesWithBase64,
     inlineJavaScript,
-    copyFolderSync
+    copyFolderSync,
+    archiveFolder,
+    deleteFiles
 };

@@ -22,6 +22,7 @@
   "dependencies": {
     "archiver": "^7.0.1",
     "googleapis": "^144.0.0",
+    "minimatch": "^10.0.1",
     "tinify": "^1.7.1",
     "uglify-js": "^3.19.3"
   }
