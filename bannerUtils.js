@@ -99,9 +99,6 @@ async function replaceImagesWithBase64(folderPath) {
     // Обработка каждого изображения
     imageFiles.forEach(image => {
         const imagePath = path.join(folderPath, image.fileName);
-
-       
-
         
         // Проверка существования изображения
         if (fs.existsSync(imagePath)) {
@@ -110,9 +107,9 @@ async function replaceImagesWithBase64(folderPath) {
             const base64String = `data:image/${path.extname(image.fileName).slice(1)};base64,${imageBase64}`;
 
             // Формирование строки для поиска и замены
-            const searchPattern = `{src:"./${image.fileName}", id:"${image.id}"}`;
-            const replacePattern = `{type:"image", src:"${base64String}", id:"${image.id}"}`;
-
+            const searchPattern = new RegExp(`{\\s*src:"(\\.\\/)?${image.fileName}",\\s*id:"${image.id}"\\s*}`, "g");
+            const replacePattern = `{type:"image", src:"${base64String}", id:"${image.id}"}`;ы
+            console.log(`searchPattern ${searchPattern}`);
             // Замена в HTML
             htmlContent = htmlContent.replace(searchPattern, replacePattern);
             console.log(`Изображение ${image.fileName} заменено на Base64 в ${htmlFilePath}`);
