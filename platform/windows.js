@@ -61,4 +61,6 @@ function archiveSelectedItems(callback) {
         });
     });
 }
-module.exports = archiveSelectedItems;
+module.exports = {
+    archiveSelectedItems
+};
