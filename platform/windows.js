@@ -2,6 +2,7 @@ const { dialog } = require('electron');
 const archiver = require('archiver');
 const fs = require('fs');
 const path = require('path');
+const logCompressionToSheet = require('./statistic/logCompressionToSheet');
 
 /**
  * Архивирует выбранные папки в проводнике Windows.
@@ -36,6 +37,7 @@ async function archiveSelectedItems(callback) {
             archivedCount++;
             if (archivedCount === folderPaths.length) {
                 callback(`Архивирование завершено успешно. Архивировано папок: ${archivedCount}`);
+                logCompressionToSheet(archivedCount, "Архивация");
             }
         });
 
