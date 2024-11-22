@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const archiver = require('archiver');
 const tinify = require('tinify');
+const logCompressionToSheet = require('./statistic/logCompressionToSheet');
 tinify.key = 'JvbcxzKlLyGscgvDrcSdpJxs5knj0r4n';
 
 /**
@@ -55,6 +56,7 @@ function archiveSelectedItems(callback) {
                 archivedCount++;
                 if (archivedCount === selectedPaths.length) {
                     callback(`Архивирование завершено успешно. Архивировано папок: ${archivedCount}`);
+                    logCompressionToSheet(archivedCount, "Архивация");
                 }
             });
 
@@ -64,7 +66,10 @@ function archiveSelectedItems(callback) {
             });
 
             archive.pipe(output);
-            archive.directory(folderPath, false);
+            archive.glob('**/*', {
+                cwd: folderPath,
+                ignore: ['**/*.fla', '**/.DS_Store'] // Игнорируем файлы с расширениями
+            });
             archive.finalize();
         });
     });
