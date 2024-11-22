@@ -45,7 +45,10 @@ async function archiveSelectedItems(callback) {
         });
 
         archive.pipe(output);
-        archive.directory(folderPath, false);
+        archive.glob('**/*', {
+            cwd: folderPath,
+            ignore: ['**/*.fla', '**/.DS_Store'] // Игнорируем файлы с расширениями
+        });
         archive.finalize();
     });
 }
