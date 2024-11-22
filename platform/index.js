@@ -5,4 +5,5 @@ const os = require('os');
 
 const platformAPI = os.platform() === 'darwin' ? macOS : windows;
 
-module.exports = platformAPI;
+
+module.exports = {platformAPI};
