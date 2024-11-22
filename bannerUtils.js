@@ -9,7 +9,9 @@ const logCompressionToSheet = require('./platform/statistic/logCompressionToShee
 // Задайте свой API-ключ для TinyPNG
 tinify.key = 'JvbcxzKlLyGscgvDrcSdpJxs5knj0r4n'; // Замените на ваш реальный API ключ от TinyPNG
 
-function inlineJavaScript(htmlPath, jsPath) {
+function inlineJavaScript(folderPath) {
+    const jsPath = path.join(folderPath, 'index.js');
+    const htmlPath = path.join(folderPath, 'index.html');
     if (!fs.existsSync(htmlPath)) {
         throw new Error(`Файл ${htmlPath} не найден`);
     }
@@ -36,31 +38,35 @@ function inlineJavaScript(htmlPath, jsPath) {
  * Минифицирует указанные JS файлы.
  * @param {string[]} filePaths - Пути к JS файлам.
  */
-async function minifyJSFiles(filePaths) {
-    filePaths.forEach(filePath => {
-        if (!fs.existsSync(filePath)) {
-            console.warn(`Файл ${filePath} не найден`);
-            return;
-        }
+async function minifyJSFiles(folderPath) {
+    const jsPath = path.join(folderPath, 'index.js');
+    
+    if (!fs.existsSync(jsPath)) {
+        console.warn(`Файл ${jsPath} не найден`);
+        return;
+    }
 
-        const code = fs.readFileSync(filePath, 'utf8');
-        const result = minify(code);
+    const code = fs.readFileSync(jsPath, 'utf8');
+    const result = minify(code);
 
-        if (result.error) {
-            console.error(`Ошибка минификации ${filePath}: ${result.error}`);
-        } else {
-            fs.writeFileSync(filePath, result.code, 'utf8');
-            logCompressionToSheet(1, "Минификация");
-            console.log(`Минификация завершена для ${filePath}`);
-        }
-    });
+    if (result.error) {
+        console.error(`Ошибка минификации ${jsPath}: ${result.error}`);
+    } else {
+        fs.writeFileSync(jsPath, result.code, 'utf8');
+        logCompressionToSheet(1, "Минификация");
+        console.log(`Минификация завершена для ${jsPath}`);
+    }
+   
 }
 
 /**
  * Оптимизирует изображения через TinyPNG API.
  * @param {string[]} imagePaths - Пути к изображениям.
  */
-async function compressImages(imagePaths) {
+async function compressImages(folderPath) {
+    const imageExtensions = ['.jpg', '.png'];
+    const imagePaths = getFilePathsByExtensions(folderPath, imageExtensions);
+    console.log(`imagePaths ${imagePaths}`);
     return Promise.all(
         imagePaths.map(imagePath =>
             tinify.fromFile(imagePath).toFile(imagePath).catch(err => {
@@ -68,6 +74,14 @@ async function compressImages(imagePaths) {
             })
         )
     );
+}
+
+function getFilePathsByExtensions(folderPath, extensions) {
+
+    return fs
+        .readdirSync(folderPath)
+        .filter(file => extensions.includes(path.extname(file).toLowerCase()))
+        .map(file => path.join(folderPath, file));
 }
 
 async function replaceImagesWithBase64(folderPath) {
@@ -177,10 +191,13 @@ async function deleteFiles(folderPath, filePatterns) {
     });
 }
 
-async function insertScriptAfterMarker(htmlPath, marker, scriptToInsert) {
+async function insertScriptAfterMarker(folderPath, marker, scriptToInsert, deleteMarker = false) {
+    const htmlPath = path.join(folderPath, 'index.html');
     if (!fs.existsSync(htmlPath)) {
         throw new Error(`Файл ${htmlPath} не найден`);
     }
+
+    console.log(`scriptToInsert: ${scriptToInsert}`);
 
     // Чтение содержимого файла
     let htmlContent = fs.readFileSync(htmlPath, 'utf8');
@@ -196,9 +213,54 @@ async function insertScriptAfterMarker(htmlPath, marker, scriptToInsert) {
         `\n${scriptToInsert}\n` +
         htmlContent.slice(insertPosition);
 
+    if (deleteMarker) {
+        htmlContent = htmlContent.replace(marker, '');
+    }    
+
     // Запись измененного содержимого обратно в файл
     fs.writeFileSync(htmlPath, htmlContent, 'utf8');
     console.log(`Строка успешно вставлена в ${htmlPath}`);
+}
+
+async function wrapDiv(htmlPath, targetDivId, wrapperDiv) {
+    if (!fs.existsSync(htmlPath)) {
+        throw new Error(`Файл ${htmlPath} не найден`);
+    }
+
+    // Чтение содержимого HTML
+    let htmlContent = fs.readFileSync(htmlPath, 'utf8');
+
+    // Создаём регулярное выражение для поиска div с указанным id
+    const targetDivRegex = new RegExp(
+        `<div id="${targetDivId}".*?>[\\s\\S]*?<\\/div>`,
+        'i'
+    );
+
+    // Находим div с указанным id
+    const match = htmlContent.match(targetDivRegex);
+    if (!match) {
+        throw new Error(`Div с id="${targetDivId}" не найден в ${htmlPath}`);
+    }
+
+    const targetDiv = match[0];
+
+    // Оборачиваем найденный div
+    const wrappedDiv = `${wrapperDiv}\n${targetDiv}\n</div>`;
+    htmlContent = htmlContent.replace(targetDiv, wrappedDiv);
+
+    // Записываем обновлённый HTML обратно в файл
+    fs.writeFileSync(htmlPath, htmlContent, 'utf8');
+    console.log(`Div с id="${targetDivId}" успешно обёрнут в ${htmlPath}`);
+}
+
+async function prepareReleaseFolder(folderPath) {
+    const parentDirectory = path.dirname(folderPath);
+    const folderName = path.basename(folderPath);
+    const releasePath = path.join(parentDirectory, 'release', folderName);
+
+    copyFolderSync(folderPath, releasePath);
+    console.log(`Папка скопирована в ${releasePath}`);
+    return releasePath;
 }
 
 module.exports = {
@@ -209,5 +271,7 @@ module.exports = {
     copyFolderSync,
     archiveFolder,
     deleteFiles,
-    insertScriptAfterMarker
+    insertScriptAfterMarker,
+    wrapDiv,
+    prepareReleaseFolder
 };
