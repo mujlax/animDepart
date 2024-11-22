@@ -108,7 +108,7 @@ async function replaceImagesWithBase64(folderPath) {
 
             // Формирование строки для поиска и замены
             const searchPattern = new RegExp(`{\\s*src:"(\\.\\/)?${image.fileName}",\\s*id:"${image.id}"\\s*}`, "g");
-            const replacePattern = `{type:"image", src:"${base64String}", id:"${image.id}"}`;ы
+            const replacePattern = `{type:"image", src:"${base64String}", id:"${image.id}"}`;
             console.log(`searchPattern ${searchPattern}`);
             // Замена в HTML
             htmlContent = htmlContent.replace(searchPattern, replacePattern);
