@@ -3,7 +3,7 @@ const path = require('path');
 const { exec } = require('child_process');
 const fs = require('fs');
 
-const platformAPI = require('./platform');
+const { platformAPI } = require('./platform');
 const logCompressionToSheet = require('./platform/statistic/logCompressionToSheet');
 
 const { processAvitoNaAvito } = require('./processes/processAvitoNaAvito');
