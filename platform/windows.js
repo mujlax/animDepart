@@ -1,5 +1,6 @@
 // windows.js
 const fs = require('fs');
+const { exec } = require('child_process');
 const path = require('path');
 const archiver = require('archiver');
 const tinify = require('tinify');
