@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,16 +8,19 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fontsource-days-one@4.0.0/index.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css"
+        integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
 
     <title>Animation Department Scripts</title>
     <script src="https://kit.fontawesome.com/0bce3bbcee.js" crossorigin="anonymous"></script>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
-             <!-- <button href="./platform.html"><a href="./platform.html">Прошить</a></button> -->
+            <!-- <button href="./platform.html"><a href="./platform.html">Прошить</a></button> -->
             <h1>Animation Department Scripts <span class="txtVersion" style="color: lightgray;">ver 0.5</span></h1>
         </div>
         <div class="section-1">
@@ -30,61 +34,64 @@
                     <p style="font-size: 13px; font-style: italic;" id="countMonths">0/500</p>
                 </button>
             </div>
-            
+
         </div>
         <div class="section-1">
             <h2>В разработке</h2>
-        </br>
+            </br>
             <label for="inputStroke">Строчка</label>
             <input value="<meta name=" type="text" id="search-input" placeholder="  Введите строку для поиска">
             <div class="buttons">
-                <a href="./platform.html"><button class="glow-on-hover glow-on-hover-dev" id="proshivka">Прошивка</button></a>
-                <button class="glow-on-hover glow-on-hover-dev" id="search-button">Проверить </br>наличие строки</button>
+                <a href="./platform.html"><button class="glow-on-hover glow-on-hover-dev"
+                        id="proshivka">Прошивка</button></a>
+                <button class="glow-on-hover glow-on-hover-dev" id="search-button">Проверить </br>наличие
+                    строки</button>
                 <!-- <button class="glow-on-hover glow-on-hover-dev" id="stats-button">Показать общую статистику</button> -->
-                <button class="glow-on-hover glow-on-hover-dev" id="minify-button">Минимизировать </br> выделенные файлы .js</button>
+                <button class="glow-on-hover glow-on-hover-dev" id="minify-button">Минимизировать </br> выделенные файлы
+                    .js</button>
                 <button class="glow-on-hover glow-on-hover-dev" id="replace-images-button">Картинки в Base64</button>
                 <!-- <button class="glow-on-hover glow-on-hover-dev" id="archive-button">Проверить </br>наличие строки</button>
                 <button class="glow-on-hover glow-on-hover-dev" id="archive-button">Проверить </br>наличие строки</button> -->
             </div>
-            
+
         </div>
-        
+
         <pre id="output"></pre>
 
-        
+
     </div>
 
     <div class="credits">
         <p class="credits__txt">scripts by <a href="https://t.me/deonease">@deonease</a></p>
     </div>
     <script>
-        const { ipcRenderer } = require('electron');
+        //const { ipcRenderer } = require('electron');
 
         // Обработчик для кнопки архивирования
         document.getElementById('archive-button').addEventListener('click', () => {
-            ipcRenderer.send('run-archive');
+            window.electron.send('run-archive');
         });
 
-        ipcRenderer.on('archive-response', (event, response) => {
+        window.electron.on('archive-response', (response) => {
             document.getElementById('output').textContent = response;
         });
 
         // Обработчик для кнопки поиска
         document.getElementById('search-button').addEventListener('click', () => {
             const searchString = document.getElementById('search-input').value;
-            ipcRenderer.send('run-search', searchString);
+            window.electron.send('run-search', searchString);
         });
 
-        ipcRenderer.on('search-response', (event, response) => {
+        window.electron.on('search-response', (response) => {
             document.getElementById('output').textContent = response;
         });
 
         // Обработчик для кнопки сжатия изображений
         document.getElementById('compress-button').addEventListener('click', () => {
-            ipcRenderer.send('run-compress');
+            window.electron.send('run-compress');
         });
 
-        ipcRenderer.on('compress-response', (event, response) => {
+        window.electron.on('compress-response', (response) => {
             document.getElementById('output').textContent = response[0];
             // Обновляем счётчик сжатий (предполагаем, что он возвращается)
             document.getElementById('countMonths').textContent = response[1] + "/500 сжатий";
@@ -92,21 +99,22 @@
 
         // Обработчик для кнопки минимизации JS
         document.getElementById('minify-button').addEventListener('click', () => {
-            ipcRenderer.send('run-minify');
+            window.electron.send('run-minify');
         });
 
-        ipcRenderer.on('minify-response', (event, response) => {
+        window.electron.on('minify-response', (response) => {
             document.getElementById('output').textContent = response;
         });
 
         document.getElementById('replace-images-button').addEventListener('click', () => {
-        ipcRenderer.send('replace-images-base64');
-    });
+            window.electron.send('replace-images-base64');
+        });
 
-    ipcRenderer.on('replace-images-response', (event, response) => {
-        document.getElementById('output').textContent = response;
-    });
-        
+        window.electron.on('replace-images-response', (response) => {
+            document.getElementById('output').textContent = response;
+        });
+
     </script>
 </body>
+
 </html>
