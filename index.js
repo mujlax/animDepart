@@ -65,7 +65,21 @@ ipcMain.on('replace-images-base64', (event) => {
     });
 });
 
-ipcMain.on('process-folders', async (event, { platform, paths }) => {
+ipcMain.on('open-modal', (event) => {
+    const webContents = event.sender;
+    if (webContents) {
+        webContents.send('open-modal'); // Отправляем событие для показа модального окна
+    } else {
+        console.error('Ошибка: webContents не определён.');
+    }
+});
+
+ipcMain.on('process-folders', async (event, { platform, paths, options }) => {
+    const browserWindow = BrowserWindow.getFocusedWindow();
+    if (!browserWindow) {
+        event.reply('process-folders-response', 'Ошибка: Не найдено активное окно.');
+        return;
+    }
     try {
         console.log(`Выбрана площадка: ${platform}`);
         console.log(`Пути папок: ${paths}`);
@@ -73,7 +87,7 @@ ipcMain.on('process-folders', async (event, { platform, paths }) => {
 
         for (const folderPath of paths) {
             if (platform === 'АвитоНаАвито') {
-                await processAvitoNaAvito(folderPath);
+                await processAvitoNaAvito(folderPath, options, browserWindow);
                 event.reply('process-folders-response', `Папка обработана: ${folderPath}`);
             } else if (platform === 'YandexRTB') {
                 await processYandexRTB(folderPath);

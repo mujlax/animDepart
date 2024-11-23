@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const archiver = require('archiver');
+const { ipcMain } = require('electron');
 const { minifyJSFiles, 
     compressImages, 
     replaceImagesWithBase64, 
@@ -15,26 +16,34 @@ const { minifyJSFiles,
 
 
 
-async function processAvitoNaAvito(folderPath) {
+async function processAvitoNaAvito(folderPath, options = {}, browserWindow) {
     
+    const { requestLink = true } = options;
 
     const releasePath = await prepareReleaseFolder(folderPath);
-
-    const files = fs.readdirSync(releasePath);
-    const htmlFile = files.find(file => file === 'index.html');
-
-    if (!htmlFile) {
-        throw new Error('Файл index.html или index.js не найден в папке');
-    }
-    
-
-    const htmlPath = path.join(releasePath, htmlFile);
-    //const jsPath = path.join(releasePath, jsFile);
     const sizeMatch = releasePath.match(/(\d+)x(\d+)/);
     const [_, width, height] = sizeMatch || [null, '0', '0'];
 
     console.log(`Обрабатываем папку: ${folderPath}`);
     console.log(`Папка скопирована в ${releasePath}`);
+
+    let userLink = 'https://example.com'; // Значение по умолчанию
+
+    if (requestLink) {
+        if (!browserWindow) {
+            throw new Error('Не передано окно для взаимодействия с рендером.');
+        }
+
+        userLink = await new Promise((resolve) => {
+            ipcMain.once('modal-response', (event, link) => {
+                console.log('Получена ссылка из модального окна:', link);
+                resolve(link || 'https://example.com'); // Передаём значение по умолчанию, если ссылка не указана
+            });
+
+            console.log('Отправка события open-modal в рендер');
+            browserWindow.webContents.send('open-modal');
+        });
+    }
 
     await insertScriptAfterMarker(releasePath, 
         '<!-- write your code here -->', 
@@ -53,7 +62,7 @@ async function processAvitoNaAvito(folderPath) {
         );
 
     try {
-        await wrapDiv(htmlPath, 'animation_container', `<div onclick="window.open('https://example.com'); buzzTrack('click');">`);
+        await wrapDiv(releasePath, 'animation_container', `<div onclick="window.open('${userLink}'); buzzTrack('click');">`);
         console.log('Div успешно обёрнут.');
     } catch (error) {
         console.error('Ошибка:', error.message);

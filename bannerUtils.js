@@ -219,7 +219,8 @@ async function insertScriptAfterMarker(folderPath, marker, scriptToInsert, delet
     console.log(`Строка успешно вставлена в ${htmlPath}`);
 }
 
-async function wrapDiv(htmlPath, targetDivId, wrapperDiv) {
+async function wrapDiv(folderPath, targetDivId, wrapperDiv) {
+    const htmlPath = path.join(folderPath, 'index.html');
     if (!fs.existsSync(htmlPath)) {
         throw new Error(`Файл ${htmlPath} не найден`);
     }
