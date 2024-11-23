@@ -74,8 +74,10 @@ ipcMain.on('open-modal', (event) => {
     }
 });
 
-ipcMain.on('process-folders', async (event, { platform, paths, options }) => {
+ipcMain.on('process-folders', async (event, { platform, paths}) => {
     const browserWindow = BrowserWindow.getFocusedWindow();
+
+
     if (!browserWindow) {
         event.reply('process-folders-response', 'Ошибка: Не найдено активное окно.');
         return;
@@ -85,15 +87,17 @@ ipcMain.on('process-folders', async (event, { platform, paths, options }) => {
         console.log(`Пути папок: ${paths}`);
         logCompressionToSheet(paths.length, "Прошивка: " + platform);
 
-        for (const folderPath of paths) {
+        
             if (platform === 'АвитоНаАвито') {
-                await processAvitoNaAvito(folderPath, options, browserWindow);
-                event.reply('process-folders-response', `Папка обработана: ${folderPath}`);
+                await processAvitoNaAvito(paths, { requestLink: false }, null, browserWindow);
+                paths.forEach((folderPath) => {
+                    event.reply('process-folders-response', `Папка обработана: ${folderPath}`);
+                });
             } else if (platform === 'YandexRTB') {
                 await processYandexRTB(folderPath);
                 event.reply('process-folders-response', `Папка обработана: ${folderPath}`);
             }
-        }
+       
 
         event.reply('process-folders-response', 'Обработка завершена!');
     } catch (error) {
