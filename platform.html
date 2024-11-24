@@ -86,6 +86,10 @@
         const output = document.getElementById('output');
         const platformSelect = document.getElementById('platform');
 
+        window.onload = () => {
+            console.log('platform.html загружен, регистрируем окно.');
+            window.electron.send('register-platform-window');
+        };
 
         // Подсвечиваем область при перетаскивании
         dropZone.addEventListener('dragover', (e) => {

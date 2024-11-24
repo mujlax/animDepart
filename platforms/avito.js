@@ -17,8 +17,8 @@ const { minifyJSFiles,
 
 module.exports = {
     name: 'АвитоНаАвито',
-    process: async (paths, userLink, browserWindow) => {
-        userLink = await checkRequestLink(requestLink = true, userLink, browserWindow);
+    process: async (paths, userLink, platformWindow) => {
+        userLink = await checkRequestLink(requestLink = false, userLink, platformWindow);
 
         for (const folderPath of paths) {
             const releasePath = await prepareReleaseFolder(folderPath);

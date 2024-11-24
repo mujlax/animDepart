@@ -40,6 +40,21 @@ app.on('activate', () => {
     }
 });
 
+let platformWindow = null;
+
+ipcMain.on('register-platform-window', (event) => {
+    platformWindow = BrowserWindow.getFocusedWindow();
+    console.log('Окно platform.html зарегистрировано.');
+});
+
+ipcMain.on('get-platform-window', (event) => {
+    if (platformWindow) {
+        event.reply('platform-window-registered', true);
+    } else {
+        event.reply('platform-window-registered', false);
+    }
+});
+
 // Обработка вызова AppleScript
 ipcMain.on('run-archive', async (event) => {
     platformAPI.archiveSelectedItems(response => event.reply('archive-response', response));
@@ -101,14 +116,19 @@ ipcMain.on('get-platforms', (event) => {
 
 
 ipcMain.on('process-platform', async (event, { platformName, paths }) => {
+    if (!platformWindow) {
+        event.reply('platform-process-response', 'Ошибка: Окно platform.html не зарегистрировано.');
+        return;
+    }
+    
     const platform = platforms.find((p) => p.name === platformName);
     if (platform) {
-        const browserWindow = BrowserWindow.getFocusedWindow();
+        //platformWindow.webContents.send('open-modal');
         let userLink = null;
 
         
         console.log("Передаем пути:" + paths)
-        await platform.process(paths, userLink, browserWindow);
+        await platform.process(paths, userLink, platformWindow);
         event.reply('platform-process-response', `Обработка завершена для платформы ${platformName}`);
     } else {
         event.reply('platform-process-response', `Платформа ${platformName} не найдена`);
