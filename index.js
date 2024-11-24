@@ -74,36 +74,44 @@ ipcMain.on('open-modal', (event) => {
     }
 });
 
-ipcMain.on('process-folders', async (event, { platform, paths}) => {
-    const browserWindow = BrowserWindow.getFocusedWindow();
 
 
-    if (!browserWindow) {
-        event.reply('process-folders-response', 'Ошибка: Не найдено активное окно.');
-        return;
-    }
-    try {
-        console.log(`Выбрана площадка: ${platform}`);
-        console.log(`Пути папок: ${paths}`);
-        logCompressionToSheet(paths.length, "Прошивка: " + platform);
+const platformsDir = path.join(__dirname, 'platforms');
+
+function loadPlatforms() {
+    const platforms = [];
+    const files = fs.readdirSync(platformsDir);
+
+    files.forEach((file) => {
+        const platformPath = path.join(platformsDir, file);
+        if (path.extname(file) === '.js') {
+            const platform = require(platformPath);
+            platforms.push(platform);
+        }
+    });
+
+    return platforms;
+}
+
+const platforms = loadPlatforms();
+
+ipcMain.on('get-platforms', (event) => {
+    event.reply('platforms-list', platforms.map((platform) => platform.name));
+});
+
+
+ipcMain.on('process-platform', async (event, { platformName, paths }) => {
+    const platform = platforms.find((p) => p.name === platformName);
+    if (platform) {
+        const browserWindow = BrowserWindow.getFocusedWindow();
+        let userLink = null;
 
         
-            if (platform === 'АвитоНаАвито') {
-                await processAvitoNaAvito(paths, { requestLink: true }, null, browserWindow);
-                
-            } else if (platform === 'YandexRTB') {
-                await processYandexRTB(folderPath);
-                event.reply('process-folders-response', `Папка обработана: ${folderPath}`);
-            }
-
-            paths.forEach((folderPath) => {
-                event.reply('process-folders-response', `Папка обработана: ${folderPath}`);
-            });
-
-        event.reply('process-folders-response', 'Обработка завершена!');
-    } catch (error) {
-        console.error('Ошибка при обработке папок:', error);
-        event.reply('process-folders-response', `Ошибка: ${error.message}`);
+        console.log("Передаем пути:" + paths)
+        await platform.process(paths, userLink, browserWindow);
+        event.reply('platform-process-response', `Обработка завершена для платформы ${platformName}`);
+    } else {
+        event.reply('platform-process-response', `Платформа ${platformName} не найдена`);
     }
 });
 

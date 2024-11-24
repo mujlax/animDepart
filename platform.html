@@ -104,7 +104,7 @@
             dropZone.classList.remove('dragover');
 
             const items = [...e.dataTransfer.items];
-            const folderPaths = [];
+            const paths = [];
 
             // Асинхронно получаем пути с использованием webUtils
             for (const item of items) {
@@ -112,29 +112,37 @@
                 if (file) {
                     const filePath = await window.electron.getFilePath(file); // Получаем путь через webUtils
                     if (filePath) {
-                        folderPaths.push(filePath);
+                        paths.push(filePath);
                     }
                 }
             }
 
-            if (folderPaths.length === 0) {
+            if (paths.length === 0) {
                 output.textContent = 'Перетащенные элементы не содержат папок.';
                 console.log('Не найдены папки');
                 return;
             }
 
             const platform = platformSelect.value;
-            output.textContent = `Выбрана площадка: ${platform}\nОбрабатываем папки...\n`;
-            output.textContent = `Пути перетащенных папок:\n${folderPaths.join('\n')}`;
+            if (!platform) {
+                output.textContent = 'Пожалуйста, выберите платформу из списка.';
+                return;
+            }
 
+            output.textContent = `Обработка началась для платформы: ${platform}...`;
 
-            // Отправляем пути и выбранную платформу в основной процесс
-            window.electron.processFolders({ platform, paths: folderPaths });
-
-            // Слушаем ответы от основного процесса
-            window.electron.onProcessFoldersResponse((response) => {
-                output.textContent += response + '\n';
+            // Отправляем данные в основной процесс
+            window.electron.send('process-platform', {
+                platformName: platform,
+                paths,
+                //options: { requestLink: true }, // Передаём опции
             });
+
+        });
+
+        // Слушаем ответ от основного процесса
+        window.electron.on('platform-process-response', (message) => {
+            output.textContent = message;
         });
 
         window.electron.onModalResponse((link) => {
@@ -148,6 +156,21 @@
                 window.electron.send('modal-response', link);
             });
         });
+
+        window.electron.on('platforms-list', (platforms) => {
+            const platformSelect = document.getElementById('platform');
+            platformSelect.innerHTML = ''; // Очищаем старые значения
+
+            platforms.forEach((platform) => {
+                const option = document.createElement('option');
+                option.value = platform;
+                option.textContent = platform;
+                platformSelect.appendChild(option);
+            });
+        });
+
+        // Запрашиваем список платформ при загрузке страницы
+        window.electron.send('get-platforms');
 
         function openModal(callback) {
             modal.style.display = 'block';
