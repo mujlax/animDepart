@@ -60,6 +60,11 @@
         <a href="./index.html">Назад</a>
         <h1>Прошивка баннеров под площадки</h1>
         <div class="platform-select">
+            <label>
+                <input type="checkbox" id="cloud" />
+                Использовать прошивки из облака
+            </label>
+            <p></p>
             <label for="platform">Выберите площадку:</label>
             <select id="platform">
                 <option value="АвитоНаАвито">АвитоНаАвито</option>
@@ -86,9 +91,21 @@
         const output = document.getElementById('output');
         const platformSelect = document.getElementById('platform');
 
+        const cloudCheckbox = document.getElementById('cloud');
+
+        function updatePlatformList() {
+            const useCloud = cloudCheckbox.checked;
+            window.electron.send('toggle-cloud', useCloud);
+        }
+
+        // Слушаем переключение чекбокса
+        cloudCheckbox.addEventListener('change', updatePlatformList);
+
+
         window.onload = () => {
             console.log('platform.html загружен, регистрируем окно.');
             window.electron.send('register-platform-window');
+            updatePlatformList();
         };
 
         // Подсвечиваем область при перетаскивании
