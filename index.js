@@ -89,15 +89,16 @@ ipcMain.on('process-folders', async (event, { platform, paths}) => {
 
         
             if (platform === 'АвитоНаАвито') {
-                await processAvitoNaAvito(paths, { requestLink: false }, null, browserWindow);
-                paths.forEach((folderPath) => {
-                    event.reply('process-folders-response', `Папка обработана: ${folderPath}`);
-                });
+                await processAvitoNaAvito(paths, { requestLink: true }, null, browserWindow);
+                
             } else if (platform === 'YandexRTB') {
                 await processYandexRTB(folderPath);
                 event.reply('process-folders-response', `Папка обработана: ${folderPath}`);
             }
-       
+
+            paths.forEach((folderPath) => {
+                event.reply('process-folders-response', `Папка обработана: ${folderPath}`);
+            });
 
         event.reply('process-folders-response', 'Обработка завершена!');
     } catch (error) {

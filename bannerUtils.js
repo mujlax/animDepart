@@ -4,6 +4,7 @@ const archiver = require('archiver');
 const tinify = require('tinify');
 const { minify } = require('uglify-js');
 const { minimatch } = require('minimatch')
+const { ipcMain } = require('electron');
 const logCompressionToSheet = require('./platform/statistic/logCompressionToSheet');
 
 // Задайте свой API-ключ для TinyPNG
@@ -261,6 +262,24 @@ async function prepareReleaseFolder(folderPath) {
     return releasePath;
 }
 
+async function checkRequestLink (requestLink, userLink, browserWindow) {
+    if (requestLink && !userLink) {
+        if (!browserWindow) {
+            throw new Error('Не передано окно для взаимодействия с рендером.');
+        }
+
+        userLink = await new Promise((resolve) => {
+            ipcMain.once('modal-response', (event, link) => {
+                resolve(link || 'https://example.com'); // Значение по умолчанию
+            });
+
+            console.log('Отправка события open-modal в рендер');
+            browserWindow.webContents.send('open-modal');
+        });
+    }
+    return userLink;
+}
+
 module.exports = {
     minifyJSFiles,
     compressImages,
@@ -271,5 +290,6 @@ module.exports = {
     deleteFiles,
     insertScriptAfterMarker,
     wrapDiv,
-    prepareReleaseFolder
+    prepareReleaseFolder,
+    checkRequestLink
 };

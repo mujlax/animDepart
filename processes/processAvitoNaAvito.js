@@ -11,29 +11,15 @@ const { minifyJSFiles,
     deleteFiles, 
     insertScriptAfterMarker, 
     wrapDiv,
-    prepareReleaseFolder
+    prepareReleaseFolder,
+    checkRequestLink
 } = require('../bannerUtils');
 
 
 
 async function processAvitoNaAvito(paths, options = { requestLink: false }, userLink = null, browserWindow) {
     
-    const { requestLink } = options;
-
-    if (requestLink && !userLink) {
-        if (!browserWindow) {
-            throw new Error('Не передано окно для взаимодействия с рендером.');
-        }
-
-        userLink = await new Promise((resolve) => {
-            ipcMain.once('modal-response', (event, link) => {
-                resolve(link || 'https://example.com'); // Значение по умолчанию
-            });
-
-            console.log('Отправка события open-modal в рендер');
-            browserWindow.webContents.send('open-modal');
-        });
-    }
+    userLink = await checkRequestLink(options.requestLink, userLink, browserWindow);
     
     for (const folderPath of paths) {
         const releasePath = await prepareReleaseFolder(folderPath);
@@ -44,8 +30,7 @@ async function processAvitoNaAvito(paths, options = { requestLink: false }, user
         console.log(`Папка скопирована в ${releasePath}`);
         console.log(`Используемая ссылка: ${userLink}`);
 
-        
-
+    
         await insertScriptAfterMarker(releasePath, 
             '<!-- write your code here -->', 
             '<script type="text/javascript" src="https://tube.buzzoola.com/new/js/lib/banner.js"></script>'
