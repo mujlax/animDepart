@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const { exec } = require('child_process');
 const fs = require('fs');
-
+const archiver = require('archiver');
 const axios = require('axios'); // Для загрузки файлов
 const vm = require('vm'); // Для безопасного выполнения скриптов
 
@@ -213,4 +213,46 @@ ipcMain.on('process-platform', async (event, { platformName, paths }) => {
         event.reply('platform-process-response', `Платформа ${platformName} не найдена`);
     }
 });
+
+ipcMain.on('archive-drag-drop', async (event, paths) => {
+    if (!paths || paths.length === 0) {
+        event.reply('archive-response', 'Не выбраны папки для архивации.');
+        return;
+    }
+
+    let archivedCount = 0;
+
+    paths.forEach(folderPath => {
+        const folderName = path.basename(folderPath);
+        const outputZipPath = path.join(path.dirname(folderPath), `${folderName}.zip`);
+
+        // Создаем поток записи для архива
+        const output = fs.createWriteStream(outputZipPath);
+        const archive = archiver('zip', {
+            zlib: { level: 9 } // Уровень сжатия
+        });
+
+        output.on('close', () => {
+            archivedCount++;
+            if (archivedCount === paths.length) {
+                //callback(`Архивирование завершено успешно. Архивировано папок: ${archivedCount}`);
+                logCompressionToSheet(archivedCount, "Архивация");
+            }
+        });
+
+        archive.on('error', (err) => {
+            console.error(`Ошибка архивации папки ${folderName}: ${err.message}`);
+            //callback(`Ошибка архивации папки ${folderName}`);
+        });
+
+        archive.pipe(output);
+        archive.glob('**/*', {
+            cwd: folderPath,
+            ignore: ['**/*.fla', '**/.DS_Store'] // Игнорируем файлы с расширениями
+        });
+        archive.finalize();
+    });
+});
+
+
 

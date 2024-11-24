@@ -67,6 +67,40 @@
     <script>
         //const { ipcRenderer } = require('electron');
 
+        const archiveButton = document.getElementById('archive-button');
+
+        // Подсветка при наведении
+        archiveButton.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            archiveButton.classList.add('drag-over');
+        });
+
+        archiveButton.addEventListener('dragleave', () => {
+            archiveButton.classList.remove('drag-over');
+        });
+
+        // Обработка перетаскивания
+        archiveButton.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            archiveButton.classList.remove('drag-over');
+
+            const items = [...e.dataTransfer.items];
+            const paths = [];
+            
+            // Асинхронно получаем пути с использованием webUtils
+            for (const item of items) {
+                const file = item.getAsFile();
+                if (file) {
+                    const filePath = await window.electron.getFilePath(file); // Получаем путь через webUtils
+                    if (filePath) {
+                        paths.push(filePath);
+                    }
+                }
+            }
+
+            window.electron.send('archive-drag-drop', paths);
+        });
+
         // Обработчик для кнопки архивирования
         document.getElementById('archive-button').addEventListener('click', () => {
             window.electron.send('run-archive');
