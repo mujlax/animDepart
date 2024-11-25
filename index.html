@@ -67,6 +67,32 @@
     <script>
         //const { ipcRenderer } = require('electron');
 
+        const targetSequence = ['P', 'O', 'O', 'P']; // Целевая последовательность
+        let inputSequence = []; // Текущая последовательность
+
+        // Загрузка звука
+        const poopSound = new Audio('./sounds/poop.mp3');
+
+        // Обработчик нажатия клавиш
+        window.addEventListener('keydown', (event) => {
+            const key = event.key.toUpperCase();
+
+            // Добавляем нажатую клавишу в последовательность
+            inputSequence.push(key);
+
+            // Проверяем, не превышает ли длина последовательности целевую
+            if (inputSequence.length > targetSequence.length) {
+                inputSequence.shift(); // Удаляем первый элемент, чтобы длина соответствовала целевой
+            }
+
+            // Проверяем совпадение последовательности
+            if (JSON.stringify(inputSequence) === JSON.stringify(targetSequence)) {
+                poopSound.play(); // Воспроизводим звук
+                inputSequence = []; // Сбрасываем последовательность
+            }
+        });
+
+
         const archiveButton = document.getElementById('archive-button');
 
         function dragAndDropBtn(elementId) {
