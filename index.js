@@ -121,8 +121,8 @@ function createWindow() {
     // win.webContents.openDevTools();
 }
 
-app.on('ready', async () => {
-    await initializePlatforms();
+app.on('ready', () => {
+    //await initializePlatforms();
     createWindow;
 });
 
