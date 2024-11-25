@@ -5,6 +5,8 @@ const fs = require('fs');
 const archiver = require('archiver');
 const axios = require('axios'); // Для загрузки файлов
 const vm = require('vm'); // Для безопасного выполнения скриптов
+const tinify = require('tinify');
+tinify.key = 'JvbcxzKlLyGscgvDrcSdpJxs5knj0r4n';
 
 const CLOUD_URL = 'https://api.github.com/repos/mujlax/animDepartPlatforms/contents/platforms';
 
@@ -103,7 +105,7 @@ ipcMain.on('toggle-cloud', (event, enabled) => {
 
 
 function createWindow() {
-    
+
     const win = new BrowserWindow({
         width: 800,
         height: 600,
@@ -197,7 +199,7 @@ ipcMain.on('process-platform', async (event, { platformName, paths }) => {
         event.reply('platform-process-response', 'Ошибка: Окно platform.html не зарегистрировано.');
         return;
     }
-    
+
     const currentPlatforms = useCloud ? cloudPlatforms : localPlatforms;
 
     const platform = currentPlatforms.find((p) => p.name === platformName);
@@ -205,7 +207,7 @@ ipcMain.on('process-platform', async (event, { platformName, paths }) => {
         //platformWindow.webContents.send('open-modal');
         let userLink = null;
 
-        
+
         console.log("Передаем пути:" + paths)
         await platform.process(paths, userLink, platformWindow);
         event.reply('platform-process-response', `Обработка завершена для платформы ${platformName}`);
@@ -214,7 +216,7 @@ ipcMain.on('process-platform', async (event, { platformName, paths }) => {
     }
 });
 
-ipcMain.on('archive-drag-drop', async (event, paths) => {
+ipcMain.on('archive-button', async (event, paths) => {
     if (!paths || paths.length === 0) {
         event.reply('archive-response', 'Не выбраны папки для архивации.');
         return;
@@ -253,6 +255,45 @@ ipcMain.on('archive-drag-drop', async (event, paths) => {
         archive.finalize();
     });
 });
+
+ipcMain.on('compress-button', async (event, paths) => {
+    if (!paths || paths.length === 0) {
+        event.reply('compress-response', 'Не выбраны папки для сжатия фото.');
+        return;
+    }
+    const response = [];
+    response.push('Все изображения успешно сжаты (наверно пхе)');
+
+
+
+    paths.forEach(folderPath => {
+        const imageExtensions = ['.jpg', '.png'];
+        const imagePaths = getFilePathsByExtensions(folderPath, imageExtensions);
+        console.log(`imagePaths ${imagePaths}`);
+        return Promise.all(
+            imagePaths.map(imagePath =>
+                tinify.fromFile(imagePath).toFile(imagePath, () => {
+                    logCompressionToSheet(imagePaths.length, "Сжатие изображения");
+                    response.push(tinify.compressionCount),
+                        event.reply('compress-response', response)
+                })
+            ),
+
+        );
+
+
+    });
+
+
+});
+
+function getFilePathsByExtensions(folderPath, extensions) {
+
+    return fs
+        .readdirSync(folderPath)
+        .filter(file => extensions.includes(path.extname(file).toLowerCase()))
+        .map(file => path.join(folderPath, file));
+}
 
 
 
