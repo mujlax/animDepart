@@ -22,7 +22,7 @@ function inlineJavaScript(folderPath) {
 
     // Чтение и минификация JavaScript
     let jsContent = fs.readFileSync(jsPath, 'utf8');
-    
+
     // Чтение и замена в HTML
     let htmlContent = fs.readFileSync(htmlPath, 'utf8');
     htmlContent = htmlContent.replace(
@@ -41,7 +41,7 @@ function inlineJavaScript(folderPath) {
  */
 async function minifyJSFiles(folderPath) {
     const jsPath = path.join(folderPath, 'index.js');
-    
+
     if (!fs.existsSync(jsPath)) {
         console.warn(`Файл ${jsPath} не найден`);
         return;
@@ -57,7 +57,7 @@ async function minifyJSFiles(folderPath) {
         logCompressionToSheet(1, "Минификация");
         console.log(`Минификация завершена для ${jsPath}`);
     }
-   
+
 }
 
 /**
@@ -92,7 +92,7 @@ async function replaceImagesWithBase64(folderPath) {
         { fileName: 'index_atlas_P_1.png', id: 'index_atlas_P_1' }
     ];
 
-    
+
 
     // Чтение содержимого index.html
     let htmlContent = fs.readFileSync(htmlFilePath, 'utf8');
@@ -100,7 +100,7 @@ async function replaceImagesWithBase64(folderPath) {
     // Обработка каждого изображения
     imageFiles.forEach(image => {
         const imagePath = path.join(folderPath, image.fileName);
-        
+
         // Проверка существования изображения
         if (fs.existsSync(imagePath)) {
             // Преобразование изображения в Base64
@@ -142,7 +142,7 @@ function copyFolderSync(source, target) {
     }
 }
 
-async function archiveFolder (folderPath) {
+async function archiveFolder(folderPath) {
 
     const folderName = path.basename(folderPath);
     const outputZipPath = path.join(path.dirname(folderPath), `${folderName}.zip`);
@@ -161,7 +161,7 @@ async function archiveFolder (folderPath) {
         ignore: ['**/*.fla', '**/.DS_Store'] // Игнорируем файлы с расширениями
     });
     archive.finalize();
-    
+
     logCompressionToSheet(1, "Архивация");
 }
 
@@ -213,7 +213,7 @@ async function insertScriptAfterMarker(folderPath, marker, scriptToInsert, delet
 
     if (deleteMarker) {
         htmlContent = htmlContent.replace(marker, '');
-    }    
+    }
 
     // Запись измененного содержимого обратно в файл
     fs.writeFileSync(htmlPath, htmlContent, 'utf8');
@@ -231,7 +231,7 @@ async function wrapDiv(folderPath, targetDivId, wrapperDiv) {
 
     // Создаём регулярное выражение для поиска div с указанным id
     const targetDivRegex = new RegExp(
-        `<div id="${targetDivId}".*?>[\\s\\S]*?<\\/div>`,
+        `<div id="${targetDivId}".*?>[\\s\\S]*?<\\/div>[\\s\\S]*?<\\/div>`,
         'i'
     );
 
@@ -242,9 +242,17 @@ async function wrapDiv(folderPath, targetDivId, wrapperDiv) {
     }
 
     const targetDiv = match[0];
+    console.log("targetDiv: " + targetDiv); 
+    // Извлекаем имя тега из wrapperDiv
+    const tagMatch = wrapperDiv.match(/^<([a-zA-Z0-9]+)/);
+    if (!tagMatch) {
+        throw new Error('Некорректный wrapperDiv. Убедитесь, что это валидный HTML-тег.');
+    }
 
     // Оборачиваем найденный div
-    const wrappedDiv = `${wrapperDiv}\n${targetDiv}\n</div>`;
+    const wrapperTag = tagMatch[1]; // Имя тега (например, "a", "p", "div");
+    const wrappedDiv = `${wrapperDiv}\n${targetDiv}\n</${wrapperTag}>`;
+    console.log("wrapperTag" + wrapperTag); 
     htmlContent = htmlContent.replace(targetDiv, wrappedDiv);
 
     // Записываем обновлённый HTML обратно в файл
@@ -262,7 +270,7 @@ async function prepareReleaseFolder(folderPath) {
     return releasePath;
 }
 
-async function checkRequestLink (requestLink, userLink, browserWindow) {
+async function checkRequestLink(requestLink, userLink, browserWindow) {
     if (requestLink && !userLink) {
         if (!browserWindow) {
             throw new Error('Не передано окно для взаимодействия с рендером.');

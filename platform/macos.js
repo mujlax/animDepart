@@ -205,6 +205,7 @@ function compressImages(callback) {
                     logCompressionToSheet(compressedCount, "Сжатие изображения");
                 }
             });
+            
         });
     });
 }
