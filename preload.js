@@ -17,4 +17,6 @@ contextBridge.exposeInMainWorld('electron', {
     getSoundSequences: (callback) => ipcRenderer.on('sound-sequences', (event, sequences) => callback(sequences)),
     requestSoundSequences: () => ipcRenderer.send('get-sound-sequences'),
     onPlaySound: (callback) => ipcRenderer.on('play-sound', (event, soundPath) => callback(soundPath)),
+    playSound: (soundPath) => ipcRenderer.send('play-sound', soundPath),
+    playLastSound: () => ipcRenderer.send('play-last-sound'),
 });

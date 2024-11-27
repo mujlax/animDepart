@@ -83,6 +83,12 @@
         window.addEventListener('keydown', (event) => {
             const key = event.key.toUpperCase();
 
+            if (key === 'Q') {
+                // Запрос на воспроизведение последнего звука
+                window.electron.playLastSound();
+                return;
+            }
+
             // Добавляем нажатую клавишу в последовательность
             inputSequence.push(key);
 
@@ -90,30 +96,43 @@
             Object.keys(soundSequences).forEach((sequence) => {
                 const soundPath = soundSequences[sequence];
                 if (inputSequence.slice(-sequence.length).join('') === sequence) {
-                    const audio = new Audio(soundPath);
-                    audio.currentTime = 0;
-                    audio.play().catch((error) => {
-                        console.error(`Ошибка воспроизведения звука для комбинации ${sequence}:`, error);
-                    });
+                    window.electron.playSound(soundPath);
                 }
             });
 
             // Ограничиваем длину хранимой последовательности
             const maxLength = Math.max(...Object.keys(soundSequences).map((seq) => seq.length));
             if (inputSequence.length > maxLength) {
-                inputSequence.shift(); // Удаляем старые символы
+                inputSequence.shift();
             }
         });
 
+        // Получаем команду на воспроизведение звука
+        window.electron.onPlaySound((soundPath) => {
+            if (!soundPath) {
+                console.log('Последний звук ещё не проигрывался.');
+                return;
+            }
 
+            const audio = new Audio(soundPath);
 
+            // Устанавливаем случайную тональность (от 0.8 до 1.2)
+            const randomPlaybackRate = Math.random(0.2, 5.0);
+            console.log('случайную тональность ' + randomPlaybackRate);
+            audio.playbackRate = randomPlaybackRate;
+            audio.currentTime = 0;
+            audio.play().catch((error) => {
+                console.error('Ошибка воспроизведения звука:', error);
+            });
+        });
 
         function playSoundOnStart() {
             const deepDark = new Audio('./sounds/deep-dark-fantasies.mp3');
             deepDark.play();
         }
-
         playSoundOnStart()
+
+
 
 
         const archiveButton = document.getElementById('archive-button');

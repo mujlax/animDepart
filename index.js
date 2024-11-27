@@ -62,6 +62,7 @@ async function fetchCloudPlatforms() {
 }
 
 let soundSequences = {}; // Словарь звуков
+let lastPlayedSound = null; // Последний проигранный звук
 
 // Загрузка звуков из папки /sounds
 function loadSounds() {
@@ -83,6 +84,25 @@ ipcMain.on('get-sound-sequences', (event) => {
     event.reply('sound-sequences', soundSequences); // Отправляем словарь звуков в рендер
 });
 
+ipcMain.on('play-sound', (event, soundPath) => {
+    if (soundPath) {
+        lastPlayedSound = soundPath; // Обновляем путь к последнему звуку
+        console.log(`Сохранён последний звук: ${lastPlayedSound}`);
+        event.sender.send('play-sound', soundPath);
+    } else {
+        console.error('Попытка воспроизвести пустой звук');
+    }
+});
+
+ipcMain.on('play-last-sound', (event) => {
+    if (lastPlayedSound) {
+        console.log(`Воспроизведение последнего звука: ${lastPlayedSound}`);
+        event.sender.send('play-sound', lastPlayedSound);
+    } else {
+        console.log('Последний звук ещё не проигрывался.');
+        event.sender.send('play-sound', null); // Отправляем null для обработки в рендере
+    }
+});
 
 // Функция загрузки локальных платформ
 function loadLocalPlatforms() {
@@ -126,6 +146,9 @@ ipcMain.on('toggle-cloud', (event, enabled) => {
 });
 
 
+
+
+
 function createWindow() {
 
     const win = new BrowserWindow({
@@ -144,7 +167,7 @@ function createWindow() {
 }
 
 app.on('ready', async () => {
-    loadSounds();
+    loadSounds();   
     await initializePlatforms();
     createWindow();
 });
