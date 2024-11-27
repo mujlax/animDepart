@@ -66,7 +66,7 @@
     </div>
     <script>
         //const { ipcRenderer } = require('electron');
-
+        
         const targetSequence = ['P', 'O', 'O', 'P']; // Целевая последовательность
         let inputSequence = []; // Текущая последовательность
 
@@ -91,6 +91,13 @@
                 inputSequence = []; // Сбрасываем последовательность
             }
         });
+
+        function playSoundOnStart() {
+            const deepDark = new Audio('./sounds/deep-dark-fantasies.mp3');
+            deepDark.play();
+        }
+        
+        playSoundOnStart()
 
 
         const archiveButton = document.getElementById('archive-button');
