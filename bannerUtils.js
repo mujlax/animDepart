@@ -2,9 +2,11 @@ const fs = require('fs');
 const path = require('path');
 const archiver = require('archiver');
 const tinify = require('tinify');
+const axios = require('axios');
 const { minify } = require('uglify-js');
 const { minimatch } = require('minimatch')
 const { ipcMain } = require('electron');
+const cheerio = require('cheerio');
 const logCompressionToSheet = require('./platform/statistic/logCompressionToSheet');
 
 // Задайте свой API-ключ для TinyPNG
@@ -34,6 +36,73 @@ function inlineJavaScript(folderPath) {
     fs.writeFileSync(htmlPath, htmlContent, 'utf8');
     console.log(`Код из ${jsPath} успешно встроен в ${htmlPath}`);
 }
+
+function getCanvasSize(folderPath) {
+    const htmlPath = path.join(folderPath, 'index.html');
+    if (!fs.existsSync(htmlPath)) {
+        throw new Error(`Файл ${htmlPath} не найден`);
+    }
+
+    // Чтение содержимого index.html
+    const htmlContent = fs.readFileSync(htmlPath, 'utf8');
+
+    // Регулярное выражение для извлечения width и height
+    const canvasSizeRegex = /<canvas id="canvas"[^>]*width="(\d+)"[^>]*height="(\d+)"/i;
+    const sizeMatch = htmlContent.match(canvasSizeRegex);
+
+    if (!sizeMatch) {
+        throw new Error('Размеры canvas не найдены в index.html');
+    }
+
+    const [, width, height] = sizeMatch;
+    return { width, height };
+}
+
+
+async function downloadAndReplaceScript(folderPath) {
+    const htmlPath = path.join(folderPath, 'index.html');
+    const scriptPath = path.join(folderPath, 'createjs.min.js');
+    const externalUrl = 'https://code.createjs.com/1.0.0/createjs.min.js';
+
+    if (!fs.existsSync(htmlPath)) {
+        throw new Error(`Файл ${htmlPath} не найден`);
+    }
+
+    // Загрузка содержимого из внешней ссылки
+    let externalScriptContent;
+    try {
+        const response = await axios.get(externalUrl);
+        externalScriptContent = response.data;
+        console.log(`Скрипт загружен с ${externalUrl}`);
+    } catch (error) {
+        throw new Error(`Ошибка при загрузке скрипта: ${error.message}`);
+    }
+
+    // Сохранение загруженного скрипта в файл
+    try {
+        fs.writeFileSync(scriptPath, externalScriptContent, 'utf8');
+        console.log(`Скрипт сохранён в ${scriptPath}`);
+    } catch (error) {
+        throw new Error(`Ошибка при сохранении файла: ${error.message}`);
+    }
+
+    // Чтение HTML и замена строки
+    let htmlContent = fs.readFileSync(htmlPath, 'utf8');
+    htmlContent = htmlContent.replace(
+        /<script src="https:\/\/code\.createjs\.com\/1\.0\.0\/createjs\.min\.js"><\/script>/,
+        '<script src="createjs.min.js"></script>'
+    );
+
+    // Запись изменённого HTML обратно в файл
+    try {
+        fs.writeFileSync(htmlPath, htmlContent, 'utf8');
+        console.log(`HTML обновлён: ссылка на createjs.min.js добавлена в ${htmlPath}`);
+    } catch (error) {
+        throw new Error(`Ошибка при обновлении HTML: ${error.message}`);
+    }
+}
+
+
 
 /**
  * Минифицирует указанные JS файлы.
@@ -227,36 +296,28 @@ async function wrapDiv(folderPath, targetDivId, wrapperDiv) {
     }
 
     // Чтение содержимого HTML
-    let htmlContent = fs.readFileSync(htmlPath, 'utf8');
-
-    // Создаём регулярное выражение для поиска div с указанным id
-    const targetDivRegex = new RegExp(
-        `<div id="${targetDivId}".*?>[\\s\\S]*?<\\/div>[\\s\\S]*?<\\/div>`,
-        'i'
-    );
+    const htmlContent = fs.readFileSync(htmlPath, 'utf8');
+    const $ = cheerio.load(htmlContent);
 
     // Находим div с указанным id
-    const match = htmlContent.match(targetDivRegex);
-    if (!match) {
+    const targetDiv = $(`#${targetDivId}`);
+    if (targetDiv.length === 0) {
         throw new Error(`Div с id="${targetDivId}" не найден в ${htmlPath}`);
     }
 
-    const targetDiv = match[0];
-    console.log("targetDiv: " + targetDiv); 
     // Извлекаем имя тега из wrapperDiv
     const tagMatch = wrapperDiv.match(/^<([a-zA-Z0-9]+)/);
     if (!tagMatch) {
         throw new Error('Некорректный wrapperDiv. Убедитесь, что это валидный HTML-тег.');
     }
 
-    // Оборачиваем найденный div
     const wrapperTag = tagMatch[1]; // Имя тега (например, "a", "p", "div");
-    const wrappedDiv = `${wrapperDiv}\n${targetDiv}\n</${wrapperTag}>`;
-    console.log("wrapperTag" + wrapperTag); 
-    htmlContent = htmlContent.replace(targetDiv, wrappedDiv);
+
+    // Оборачиваем найденный div
+    targetDiv.wrap(wrapperDiv);
 
     // Записываем обновлённый HTML обратно в файл
-    fs.writeFileSync(htmlPath, htmlContent, 'utf8');
+    fs.writeFileSync(htmlPath, $.html(), 'utf8');
     console.log(`Div с id="${targetDivId}" успешно обёрнут в ${htmlPath}`);
 }
 
@@ -299,5 +360,7 @@ module.exports = {
     insertScriptAfterMarker,
     wrapDiv,
     prepareReleaseFolder,
-    checkRequestLink
+    checkRequestLink,
+    downloadAndReplaceScript,
+    getCanvasSize
 };
