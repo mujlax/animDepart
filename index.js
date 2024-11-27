@@ -61,6 +61,28 @@ async function fetchCloudPlatforms() {
     }
 }
 
+let soundSequences = {}; // Словарь звуков
+
+// Загрузка звуков из папки /sounds
+function loadSounds() {
+    const soundDirectory = path.join(__dirname, 'sounds');
+    const soundFiles = fs.readdirSync(soundDirectory).filter(file => file.endsWith('.mp3'));
+
+    soundSequences = {}; // Очищаем словарь перед загрузкой
+
+    soundFiles.forEach(file => {
+        const sequence = file.split('.')[0].toUpperCase(); // Имя файла без расширения
+        soundSequences[sequence] = path.join(soundDirectory, file); // Связываем комбинацию с файлом
+    });
+
+    console.log('Звуки загружены:', soundSequences);
+}
+
+// Обработка запроса на загрузку звуков
+ipcMain.on('get-sound-sequences', (event) => {
+    event.reply('sound-sequences', soundSequences); // Отправляем словарь звуков в рендер
+});
+
 
 // Функция загрузки локальных платформ
 function loadLocalPlatforms() {
@@ -122,6 +144,7 @@ function createWindow() {
 }
 
 app.on('ready', async () => {
+    loadSounds();
     await initializePlatforms();
     createWindow();
 });

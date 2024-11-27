@@ -66,12 +66,18 @@
     </div>
     <script>
         //const { ipcRenderer } = require('electron');
-        
-        const targetSequence = ['P', 'O', 'O', 'P']; // Целевая последовательность
-        let inputSequence = []; // Текущая последовательность
 
-        // Загрузка звука
-        const poopSound = new Audio('./sounds/poop.mp3');
+        const inputSequence = []; // Текущая последовательность
+        let soundSequences = {}; // Загруженные комбинации звуков
+
+        // Запрашиваем звуки при загрузке
+        window.electron.requestSoundSequences();
+
+        // Обновляем звуки при получении данных
+        window.electron.getSoundSequences((sequences) => {
+            soundSequences = sequences;
+            console.log('Звуки обновлены:', soundSequences);
+        });
 
         // Обработчик нажатия клавиш
         window.addEventListener('keydown', (event) => {
@@ -80,23 +86,33 @@
             // Добавляем нажатую клавишу в последовательность
             inputSequence.push(key);
 
-            // Проверяем, не превышает ли длина последовательности целевую
-            if (inputSequence.length > targetSequence.length) {
-                inputSequence.shift(); // Удаляем первый элемент, чтобы длина соответствовала целевой
-            }
+            // Проверяем совпадение для всех комбинаций в soundSequences
+            Object.keys(soundSequences).forEach((sequence) => {
+                const soundPath = soundSequences[sequence];
+                if (inputSequence.slice(-sequence.length).join('') === sequence) {
+                    const audio = new Audio(soundPath);
+                    audio.currentTime = 0;
+                    audio.play().catch((error) => {
+                        console.error(`Ошибка воспроизведения звука для комбинации ${sequence}:`, error);
+                    });
+                }
+            });
 
-            // Проверяем совпадение последовательности
-            if (JSON.stringify(inputSequence) === JSON.stringify(targetSequence)) {
-                poopSound.play(); // Воспроизводим звук
-                inputSequence = []; // Сбрасываем последовательность
+            // Ограничиваем длину хранимой последовательности
+            const maxLength = Math.max(...Object.keys(soundSequences).map((seq) => seq.length));
+            if (inputSequence.length > maxLength) {
+                inputSequence.shift(); // Удаляем старые символы
             }
         });
+
+
+
 
         function playSoundOnStart() {
             const deepDark = new Audio('./sounds/deep-dark-fantasies.mp3');
             deepDark.play();
         }
-        
+
         playSoundOnStart()
 
 

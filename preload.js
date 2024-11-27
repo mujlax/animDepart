@@ -14,4 +14,7 @@ contextBridge.exposeInMainWorld('electron', {
             callback(link);
         });
     },
+    getSoundSequences: (callback) => ipcRenderer.on('sound-sequences', (event, sequences) => callback(sequences)),
+    requestSoundSequences: () => ipcRenderer.send('get-sound-sequences'),
+    onPlaySound: (callback) => ipcRenderer.on('play-sound', (event, soundPath) => callback(soundPath)),
 });
