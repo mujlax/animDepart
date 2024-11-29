@@ -22,9 +22,12 @@
   "dependencies": {
     "archiver": "^7.0.1",
     "axios": "^1.7.7",
+    "canvas": "^2.11.2",
     "cheerio": "^1.0.0",
+    "gifencoder": "^2.0.1",
     "googleapis": "^144.0.0",
     "minimatch": "^10.0.1",
+    "puppeteer": "^23.9.0",
     "tinify": "^1.7.1",
     "uglify-js": "^3.19.3"
   }

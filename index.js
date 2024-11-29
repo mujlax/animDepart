@@ -6,6 +6,9 @@ const archiver = require('archiver');
 const axios = require('axios'); // Для загрузки файлов
 const vm = require('vm'); // Для безопасного выполнения скриптов
 const tinify = require('tinify');
+const puppeteer = require('puppeteer');
+const { createCanvas, loadImage } = require('canvas'); // Для работы с изображениями
+const GIFEncoder = require('gifencoder');
 tinify.key = 'JvbcxzKlLyGscgvDrcSdpJxs5knj0r4n';
 
 const CLOUD_URL = 'https://api.github.com/repos/mujlax/animDepartPlatforms/contents/platforms';
@@ -152,7 +155,7 @@ ipcMain.on('toggle-cloud', (event, enabled) => {
 function createWindow() {
 
     const win = new BrowserWindow({
-        width: 800,
+        width: 600,
         height: 600,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
@@ -332,6 +335,188 @@ ipcMain.on('compress-button', async (event, paths) => {
 
 
 });
+
+ipcMain.on('image-button', async (event, paths) => {
+    if (!paths || paths.length === 0) {
+        //event.reply('compress-response', 'Не выбраны папки для сжатия фото.');
+        console.log("Не выбраны папки для генерации картинок");
+        return;
+    }
+    const response = [];
+    response.push('Все изображения успешно выведены (наверно пхе)');
+
+    createScreenshotWithTrigger(paths);
+
+
+});
+
+async function createScreenshotWithTrigger(paths) {
+
+    for (const folderPath of paths) {
+    const releasePath = await prepareReleaseFolder(folderPath);
+    const htmlPath = path.join(releasePath, 'index.html');
+    const outputDir = path.join(releasePath, 'img');
+
+    // Проверяем наличие index.html
+    if (!fs.existsSync(htmlPath)) {
+        throw new Error(`Файл index.html не найден по пути: ${htmlPath}`);
+    }
+
+    // Создаём папку для скриншотов, если её нет
+    if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    let screenshotCounter = 1; // Счётчик для названий файлов
+    let stopTriggerReceived = false; // Флаг для остановки
+
+    // Открываем браузер Puppeteer
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+
+    // Загружаем index.html
+    await page.goto(`file://${htmlPath}`);
+
+    // Устанавливаем обработчик для скриншотов
+    await page.exposeFunction('triggerScreenshot', async () => {
+        if (stopTriggerReceived) return;
+
+        const canvasElement = await page.$('canvas#canvas');
+        if (!canvasElement) {
+            console.error('<canvas> с id="canvas" не найден!');
+            return;
+        }
+
+        const outputPath = path.join(outputDir, `screenshot_${screenshotCounter}.png`);
+        await canvasElement.screenshot({ path: outputPath });
+        console.log(`Скриншот ${screenshotCounter} сохранён в ${outputPath}`);
+        screenshotCounter++;
+    });
+
+    // Устанавливаем обработчик для остановки
+    await page.exposeFunction('triggerScreenshotStop', async () => {
+        console.log('Получен сигнал остановки.');
+        stopTriggerReceived = true;
+        await browser.close(); // Закрываем браузер
+        deleteAllExceptImg(releasePath);
+        await generateGif(releasePath);
+    });
+
+    // Добавляем обработчик для консольных триггеров
+    await page.evaluate(() => {
+        const originalConsoleLog = console.debug;
+        console.debug = (...args) => {
+            originalConsoleLog(...args);
+
+            if (args.includes('trigger-screenshot')) {
+                window.triggerScreenshot();
+            } else if (args.includes('trigger-screenshot-stop')) {
+                window.triggerScreenshotStop();
+                
+            }
+        };
+    });
+
+    console.log('Ожидание триггеров для создания скриншотов...');
+    }
+    
+}
+
+async function prepareReleaseFolder(folderPath) {
+    const parentDirectory = path.dirname(folderPath);
+    const folderName = path.basename(folderPath);
+    const releasePath = path.join(parentDirectory, 'release', folderName);
+
+    copyFolderSync(folderPath, releasePath);
+    console.log(`Папка скопирована в ${releasePath}`);
+    return releasePath;
+}
+function copyFolderSync(source, target) {
+    if (!fs.existsSync(target)) {
+        fs.mkdirSync(target, { recursive: true });
+    }
+
+    const items = fs.readdirSync(source);
+    for (const item of items) {
+        const sourcePath = path.join(source, item);
+        const targetPath = path.join(target, item);
+
+        if (fs.lstatSync(sourcePath).isDirectory()) {
+            copyFolderSync(sourcePath, targetPath);
+        } else {
+            fs.copyFileSync(sourcePath, targetPath);
+        }
+    }
+}
+
+function deleteAllExceptImg(folderPath) {
+    if (!fs.existsSync(folderPath)) {
+        throw new Error(`Папка ${folderPath} не найдена`);
+    }
+
+    const items = fs.readdirSync(folderPath);
+
+    items.forEach((item) => {
+        const itemPath = path.join(folderPath, item);
+
+        // Если это папка и её имя "img", пропускаем её
+        if (fs.statSync(itemPath).isDirectory() && item === 'img') {
+            console.log(`Папка ${itemPath} сохранена`);
+            return;
+        }
+
+        // Удаляем файлы и папки
+        fs.rmSync(itemPath, { recursive: true, force: true });
+        console.log(`Удалено: ${itemPath}`);
+    });
+
+    console.log(`Очистка папки ${folderPath} завершена, папка img сохранена`);
+}
+
+async function generateGif(releasePath) {
+    const imgDir = path.join(releasePath, 'img');
+    const gifPath = path.join(releasePath, 'output.gif');
+
+    if (!fs.existsSync(imgDir)) {
+        throw new Error(`Папка img не найдена по пути: ${imgDir}`);
+    }
+
+    const files = fs.readdirSync(imgDir).filter((file) => file.endsWith('.png') || file.endsWith('.jpg'));
+
+    if (files.length === 0) {
+        throw new Error(`Нет изображений в папке ${imgDir}`);
+    }
+
+    // Загружаем первую картинку для определения размера
+    const firstImage = await loadImage(path.join(imgDir, files[0]));
+    const width = firstImage.width;
+    const height = firstImage.height;
+
+    // Настраиваем GIFEncoder
+    const encoder = new GIFEncoder(width, height);
+    const gifStream = fs.createWriteStream(gifPath);
+    encoder.createReadStream().pipe(gifStream);
+
+    encoder.start();
+    encoder.setRepeat(0); // 0 для бесконечного цикла, -1 для одноразового
+    encoder.setDelay(500); // Задержка между кадрами (в миллисекундах)
+    encoder.setQuality(10); // Качество GIF (1 - лучшее, 10 - хуже)
+
+    // Настраиваем canvas
+    const canvas = createCanvas(width, height);
+    const ctx = canvas.getContext('2d');
+
+    for (const file of files) {
+        const imgPath = path.join(imgDir, file);
+        const image = await loadImage(imgPath);
+        ctx.clearRect(0, 0, width, height); // Очищаем canvas
+        ctx.drawImage(image, 0, 0, width, height); // Рисуем картинку
+        encoder.addFrame(ctx); // Добавляем кадр
+    }
+
+    encoder.finish(); // Завершаем создание GIF
+    console.log(`GIF успешно создан: ${gifPath}`);
+}
 
 function getFilePathsByExtensions(folderPath, extensions) {
 

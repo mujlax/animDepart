@@ -211,6 +211,24 @@ function copyFolderSync(source, target) {
     }
 }
 
+function copyFolderSync(source, target) {
+    if (!fs.existsSync(target)) {
+        fs.mkdirSync(target, { recursive: true });
+    }
+
+    const items = fs.readdirSync(source);
+    for (const item of items) {
+        const sourcePath = path.join(source, item);
+        const targetPath = path.join(target, item);
+
+        if (fs.lstatSync(sourcePath).isDirectory()) {
+            copyFolderSync(sourcePath, targetPath);
+        } else {
+            fs.copyFileSync(sourcePath, targetPath);
+        }
+    }
+}
+
 async function archiveFolder(folderPath) {
 
     const folderName = path.basename(folderPath);

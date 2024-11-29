@@ -15,9 +15,9 @@ const {
 } = require('../bannerUtils');
 
 module.exports = {
-    name: 'АвитоНаАвито',
+    name: 'RBC',
     process: async (paths, userLink, platformWindow) => {
-        userLink = await checkRequestLink(requestLink = true, userLink, platformWindow);
+        userLink = await checkRequestLink(requestLink = false, userLink, platformWindow);
 
         for (const folderPath of paths) {
             const releasePath = await prepareReleaseFolder(folderPath);
@@ -29,33 +29,23 @@ module.exports = {
 
 
             await insertScriptAfterMarker(releasePath,
-                '<!-- write your code here -->',
-                '<script type="text/javascript" src="https://tube.buzzoola.com/new/js/lib/banner.js"></script>'
-            );
-
-            await insertScriptAfterMarker(releasePath,
                 '<meta charset="UTF-8">',
                 `<meta name="ad.size" content="width=${width},height=${height}">`
             );
 
-            await insertScriptAfterMarker(releasePath,
-                '</body>',
-                `<script type="text/javascript">buzzTrack('loaded');</script>\n</body>`,
-                true
-            );
 
             try {
-                await wrapDiv(releasePath, 'animation_container', `<div onclick="window.open('${userLink}'); buzzTrack('click');">`);
+                await wrapDiv(releasePath, 'animation_container', `<a href="%banner.reference_mrc_user1%" target="%banner.target%">`);
                 console.log('Div успешно обёрнут.');
             } catch (error) {
                 console.error('Ошибка:', error.message);
             }
 
             await compressImages(releasePath);
-            await replaceImagesWithBase64(releasePath);
+            //await replaceImagesWithBase64(releasePath);
             // await minifyJSFiles(releasePath);
-            inlineJavaScript(releasePath);
-            await deleteFiles(releasePath, ['index.js', 'index_atlas_P_1.png', 'index_atlas_NP_1.jpg', '*.fla']);
+            //inlineJavaScript(releasePath);
+            await deleteFiles(releasePath, ['*.fla']);
             await archiveFolder(releasePath);
         }
     }
