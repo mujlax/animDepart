@@ -1,7 +1,7 @@
 {
   "name": "my-electron-app",
   "version": "0.6.0",
-  "main": "index.js",
+  "main": "main.js",
   "scripts": {
     "start": "electron .",
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -14,9 +14,11 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@electron/packager": "^18.3.6",
+    "@electron/rebuild": "^3.7.1",
     "electron": "^33.2.0",
     "electron-builder": "^25.1.8",
-    "electron-packager": "^17.1.2",
+    "electron-rebuild": "^3.2.9",
     "size-limit": "^11.1.6"
   },
   "dependencies": {
@@ -26,6 +28,7 @@
     "cheerio": "^1.0.0",
     "gifencoder": "^2.0.1",
     "googleapis": "^144.0.0",
+    "jimp": "^1.6.0",
     "minimatch": "^10.0.1",
     "puppeteer": "^23.9.0",
     "tinify": "^1.7.1",

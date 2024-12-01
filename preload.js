@@ -19,4 +19,5 @@ contextBridge.exposeInMainWorld('electron', {
     onPlaySound: (callback) => ipcRenderer.on('play-sound', (event, soundPath) => callback(soundPath)),
     playSound: (soundPath) => ipcRenderer.send('play-sound', soundPath),
     playLastSound: () => ipcRenderer.send('play-last-sound'),
+    applyGifSettings: (settings) => ipcRenderer.send('apply-gif-settings', settings),
 });
