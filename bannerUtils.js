@@ -7,6 +7,10 @@ const { minify } = require('uglify-js');
 const { minimatch } = require('minimatch')
 const { ipcMain } = require('electron');
 const cheerio = require('cheerio');
+const puppeteer = require('puppeteer');
+
+const GIFEncoder = require('gifencoder');
+const { Jimp } = require('jimp');
 const logCompressionToSheet = require('./platform/statistic/logCompressionToSheet');
 
 // Задайте свой API-ключ для TinyPNG
@@ -211,22 +215,146 @@ function copyFolderSync(source, target) {
     }
 }
 
-function copyFolderSync(source, target) {
-    if (!fs.existsSync(target)) {
-        fs.mkdirSync(target, { recursive: true });
+async function createScreenshotWithTrigger(paths, createGif = true, gifSettings) {
+
+    for (const folderPath of paths) {
+    const releasePath = await prepareReleaseFolder(folderPath, 'gifs');
+    const htmlPath = path.join(releasePath, 'index.html');
+    const outputDir = path.join(releasePath, 'img');
+
+    // Проверяем наличие index.html
+    if (!fs.existsSync(htmlPath)) {
+        throw new Error(`Файл index.html не найден по пути: ${htmlPath}`);
     }
 
-    const items = fs.readdirSync(source);
-    for (const item of items) {
-        const sourcePath = path.join(source, item);
-        const targetPath = path.join(target, item);
+    // Создаём папку для скриншотов, если её нет
+    if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+    }
 
-        if (fs.lstatSync(sourcePath).isDirectory()) {
-            copyFolderSync(sourcePath, targetPath);
-        } else {
-            fs.copyFileSync(sourcePath, targetPath);
+    let screenshotCounter = 1; // Счётчик для названий файлов
+    let stopTriggerReceived = false; // Флаг для остановки
+
+    // Открываем браузер Puppeteer
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+
+    // Загружаем index.html
+    await page.goto(`file://${htmlPath}`);
+
+    // Устанавливаем обработчик для скриншотов
+    await page.exposeFunction('triggerScreenshot', async () => {
+        if (stopTriggerReceived) return;
+
+        const canvasElement = await page.$('canvas#canvas');
+        if (!canvasElement) {
+            console.error('<canvas> с id="canvas" не найден!');
+            return;
+        }
+
+        const outputPath = path.join(outputDir, `screenshot_${screenshotCounter}.png`);
+        await canvasElement.screenshot({ path: outputPath });
+        console.log(`Скриншот ${screenshotCounter} сохранён в ${outputPath}`);
+        screenshotCounter++;
+    });
+
+    // Устанавливаем обработчик для остановки
+    await page.exposeFunction('triggerScreenshotStop', async () => {
+        console.log('Получен сигнал остановки.');
+        stopTriggerReceived = true;
+        await browser.close(); // Закрываем браузер
+        if (createGif) {
+            await generateGif(releasePath, gifSettings);
+        }
+        
+        deleteAllExceptImg(releasePath);
+        
+    });
+
+    // Добавляем обработчик для консольных триггеров
+    await page.evaluate(() => {
+        const originalConsoleLog = console.debug;
+        console.debug = (...args) => {
+            originalConsoleLog(...args);
+
+            if (args.includes('gif')) {
+                window.triggerScreenshot();
+            } else if (args.includes('gif-stop')) {
+                window.triggerScreenshotStop();
+                
+            }
+        };
+    });
+
+    setTimeout(async () => {
+        console.log('Таймер остановки сработал.');
+        stopTriggerReceived = true;
+        await browser.close();
+        deleteAllExceptImg(releasePath);
+    }, 30000);
+
+    console.log('Ожидание триггеров для создания скриншотов...');
+    }
+    
+}
+
+
+
+async function generateGif(releasePath, gifSettings) {
+    const imgDir = path.join(releasePath, 'img');
+
+    if (!fs.existsSync(imgDir)) {
+        throw new Error(`Папка img не найдена по пути: ${imgDir}`);
+    }
+
+    const files = fs.readdirSync(imgDir).filter((file) => file.endsWith('.png') || file.endsWith('.jpg'));
+
+    if (files.length === 0) {
+        throw new Error(`Нет изображений в папке ${imgDir}`);
+    }
+
+    console.log('Список изображений для GIF:', files);
+
+    let firstImage;
+    const firstImagePath = path.join(imgDir, files[0]);
+
+    try {
+        console.log('Проверяем путь к первому изображению:', firstImagePath);
+        firstImage = await Jimp.read(firstImagePath);
+    } catch (error) {
+        throw new Error(`Ошибка загрузки первого изображения (${firstImagePath}): ${error.message}`);
+    }
+
+    const width = firstImage.bitmap.width;
+    const height = firstImage.bitmap.height;
+    const gifPath = path.join(path.dirname(releasePath), `${width}x${height}.gif`);
+    console.log(`Размеры GIF: ${width}x${height}`);
+
+    
+    const encoder = new GIFEncoder(width, height);
+    const gifStream = fs.createWriteStream(gifPath);
+    encoder.createReadStream().pipe(gifStream);
+
+    encoder.start();
+    encoder.setRepeat(gifSettings.repeat);
+    encoder.setDelay(3000);
+    encoder.setQuality(gifSettings.quality);
+
+    for (const file of files) {
+        const imgPath = path.join(imgDir, file);
+
+        try {
+            console.log(`Загружаем изображение: ${imgPath}`);
+            const image = await Jimp.read(imgPath);
+            encoder.addFrame(image.bitmap.data);
+            console.log(`Изображение добавлено: ${file}`);
+        } catch (error) {
+            console.error(`Ошибка загрузки изображения ${file}: ${error.message}`);
         }
     }
+
+    encoder.finish();
+    console.log(`GIF успешно создан: ${gifPath}`);
 }
 
 async function archiveFolder(folderPath) {
@@ -339,10 +467,10 @@ async function wrapDiv(folderPath, targetDivId, wrapperDiv) {
     console.log(`Div с id="${targetDivId}" успешно обёрнут в ${htmlPath}`);
 }
 
-async function prepareReleaseFolder(folderPath) {
+async function prepareReleaseFolder(folderPath, name = 'release') {
     const parentDirectory = path.dirname(folderPath);
     const folderName = path.basename(folderPath);
-    const releasePath = path.join(parentDirectory, 'release', folderName);
+    const releasePath = path.join(parentDirectory, name, folderName);
 
     copyFolderSync(folderPath, releasePath);
     console.log(`Папка скопирована в ${releasePath}`);
@@ -367,6 +495,36 @@ async function checkRequestLink(requestLink, userLink, browserWindow) {
     return userLink;
 }
 
+function deleteAllExceptImg(folderPath) {
+    if (!fs.existsSync(folderPath)) {
+        throw new Error(`Папка ${folderPath} не найдена`);
+    }
+
+    const items = fs.readdirSync(folderPath);
+
+    items.forEach((item) => {
+        const itemPath = path.join(folderPath, item);
+
+        // Если это папка и её имя "img", пропускаем её
+        if (fs.statSync(itemPath).isDirectory() && item === 'img') {
+            console.log(`Папка ${itemPath} сохранена`);
+            return;
+        }
+        // Пропускаем файлы с расширением ".gif"
+        if (!fs.statSync(itemPath).isDirectory() && path.extname(item).toLowerCase() === '.gif') {
+            console.log(`Файл ${itemPath} сохранён`);
+            return;
+        }
+
+        // Удаляем файлы и папки
+        fs.rmSync(itemPath, { recursive: true, force: true });
+        console.log(`Удалено: ${itemPath}`);
+    });
+
+    console.log(`Очистка папки ${folderPath} завершена, папка img сохранена`);
+}
+
+
 module.exports = {
     minifyJSFiles,
     compressImages,
@@ -380,5 +538,8 @@ module.exports = {
     prepareReleaseFolder,
     checkRequestLink,
     downloadAndReplaceScript,
-    getCanvasSize
+    getCanvasSize,
+    deleteAllExceptImg,
+    generateGif,
+    createScreenshotWithTrigger
 };

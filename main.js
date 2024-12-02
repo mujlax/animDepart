@@ -242,7 +242,12 @@ ipcMain.on('open-modal', (event) => {
     }
 });
 
+let gifSettings = { repeat: 0, quality: 10 }; // Настройки по умолчанию
 
+ipcMain.on('apply-gif-settings', (event, settings) => {
+    gifSettings = settings;
+    console.log('Настройки GIF обновлены:', gifSettings);
+});
 
 
 ipcMain.on('process-platform', async (event, { platformName, paths }) => {
@@ -260,12 +265,15 @@ ipcMain.on('process-platform', async (event, { platformName, paths }) => {
 
 
         console.log("Передаем пути:" + paths)
-        await platform.process(paths, userLink, platformWindow);
+        await platform.process(paths, userLink, platformWindow, gifSettings);
+        console.log('ОТПРАВЛЯЕМ НАСТРОЙКИ ГИФ', gifSettings);
         event.reply('platform-process-response', `Обработка завершена для платформы ${platformName}`);
     } else {
         event.reply('platform-process-response', `Платформа ${platformName} не найдена`);
     }
 });
+
+
 
 ipcMain.on('archive-button', async (event, paths) => {
     if (!paths || paths.length === 0) {
@@ -481,12 +489,7 @@ function deleteAllExceptImg(folderPath) {
     console.log(`Очистка папки ${folderPath} завершена, папка img сохранена`);
 }
 
-let gifSettings = { repeat: 0, quality: 10 }; // Настройки по умолчанию
 
-ipcMain.on('apply-gif-settings', (event, settings) => {
-    gifSettings = settings;
-    console.log('Настройки GIF обновлены:', gifSettings);
-});
 
 async function generateGif(releasePath) {
     const imgDir = path.join(releasePath, 'img');

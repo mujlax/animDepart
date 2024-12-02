@@ -54,12 +54,12 @@
                     <label for="repeat">Цикличность GIF:</label>
                     <select id="repeat" name="repeat">
                         <option value="0" selected>Зациклен</option>
-                        <option value="-1">Одноразовый</option>
+                        <option value="3">3 раза</option>
                     </select>
-                
+
                     <label for="quality">Качество GIF (1 - лучшее, 10 - хуже):</label>
                     <input type="number" id="quality" name="quality" min="1" max="10" value="10">
-                
+
                     <button type="button" id="apply-settings">Применить настройки</button>
                 </form>
                 <button class="glow-on-hover glow-on-hover-dev" id="image-button">Сделать картинки</button>
@@ -268,12 +268,12 @@
         });
 
         document.getElementById('apply-settings').addEventListener('click', () => {
-        const repeat = parseInt(document.getElementById('repeat').value, 10);
-        const quality = parseInt(document.getElementById('quality').value, 10);
+            const repeat = parseInt(document.getElementById('repeat').value, 10);
+            const quality = parseInt(document.getElementById('quality').value, 10);
 
-        window.electron.applyGifSettings({ repeat, quality });
-        console.log('Настройки GIF отправлены:', { repeat, quality });
-    });
+            window.electron.applyGifSettings({ repeat, quality });
+            console.log('Настройки GIF отправлены:', { repeat, quality });
+        });
 
     </script>
 </body>
