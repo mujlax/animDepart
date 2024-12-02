@@ -298,6 +298,104 @@ async function createScreenshotWithTrigger(paths, createGif = true, gifSettings)
     
 }
 
+async function createScreenshotWithTriggerAdaptive(paths, createGif = true, gifSettings, maxWidth = '400') {
+
+    for (const folderPath of paths) {
+    const releasePath = await prepareReleaseFolder(folderPath, 'gifs');
+    const htmlPath = path.join(releasePath, 'index.html');
+    const outputDir = path.join(releasePath, 'img');
+
+    // Проверяем наличие index.html
+    if (!fs.existsSync(htmlPath)) {
+        throw new Error(`Файл index.html не найден по пути: ${htmlPath}`);
+    }
+
+    // Чтение и обновление HTML с помощью cheerio
+    const htmlContent = fs.readFileSync(htmlPath, 'utf8');
+    const $ = cheerio.load(htmlContent);
+
+    const bannerDiv = $('#banner');
+    if (bannerDiv.length === 0) {
+        console.error('Div с id="banner" не найден.');
+    } else {
+        bannerDiv.attr('style', `max-width: ${maxWidth}px;`);
+        console.log(`Стиль "max-width: ${maxWidth}px;" добавлен к div#banner`);
+    }
+
+    // Запись изменённого HTML обратно в файл
+    fs.writeFileSync(htmlPath, $.html(), 'utf8');
+
+    // Создаём папку для скриншотов, если её нет
+    if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    let screenshotCounter = 1; // Счётчик для названий файлов
+    let stopTriggerReceived = false; // Флаг для остановки
+
+    // Открываем браузер Puppeteer
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+
+    // Загружаем index.html
+    await page.goto(`file://${htmlPath}`);
+
+    // Устанавливаем обработчик для скриншотов
+    await page.exposeFunction('triggerScreenshot', async () => {
+        if (stopTriggerReceived) return;
+
+        const canvasElement = await page.$('canvas#canvas');
+        if (!canvasElement) {
+            console.error('<canvas> с id="canvas" не найден!');
+            return;
+        }
+
+        const outputPath = path.join(outputDir, `screenshot_${screenshotCounter}.png`);
+        await canvasElement.screenshot({ path: outputPath });
+        console.log(`Скриншот ${screenshotCounter} сохранён в ${outputPath}`);
+        screenshotCounter++;
+    });
+
+    // Устанавливаем обработчик для остановки
+    await page.exposeFunction('triggerScreenshotStop', async () => {
+        console.log('Получен сигнал остановки.');
+        stopTriggerReceived = true;
+        await browser.close(); // Закрываем браузер
+        if (createGif) {
+            await generateGif(releasePath, gifSettings);
+        }
+        
+        deleteAllExceptImg(releasePath);
+        
+    });
+
+    // Добавляем обработчик для консольных триггеров
+    await page.evaluate(() => {
+        const originalConsoleLog = console.debug;
+        console.debug = (...args) => {
+            originalConsoleLog(...args);
+
+            if (args.includes('gif')) {
+                window.triggerScreenshot();
+            } else if (args.includes('gif-stop')) {
+                window.triggerScreenshotStop();
+                
+            }
+        };
+    });
+
+    setTimeout(async () => {
+        console.log('Таймер остановки сработал.');
+        stopTriggerReceived = true;
+        await browser.close();
+        deleteAllExceptImg(releasePath);
+    }, 30000);
+
+    console.log('Ожидание триггеров для создания скриншотов...');
+    }
+    
+}
+
 
 
 async function generateGif(releasePath, gifSettings) {
@@ -541,5 +639,6 @@ module.exports = {
     getCanvasSize,
     deleteAllExceptImg,
     generateGif,
-    createScreenshotWithTrigger
+    createScreenshotWithTrigger,
+    createScreenshotWithTriggerAdaptive
 };

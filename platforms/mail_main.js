@@ -11,12 +11,13 @@ const {
     inlineJavaScript,
     deleteFiles,
     archiveFolder,
-    downloadAndReplaceScript
+    downloadAndReplaceScript,
+    createScreenshotWithTriggerAdaptive
 } = require('../bannerUtils');
 
 module.exports = {
     name: 'Mail_Main',
-    process: async (paths, userLink, platformWindow) => {
+    process: async (paths, userLink, platformWindow, gifSettings) => {
         userLink = await checkRequestLink(requestLink = false, userLink, platformWindow);
 
         for (const folderPath of paths) {
@@ -49,6 +50,7 @@ module.exports = {
             // await replaceImagesWithBase64(releasePath);
             await minifyJSFiles(releasePath);
             // bannerUtils.inlineJavaScript(releasePath);
+            await createScreenshotWithTriggerAdaptive(paths, true, gifSettings, '400')
             await deleteFiles(releasePath, ['*.fla']);
             await archiveFolder(releasePath);
         }
