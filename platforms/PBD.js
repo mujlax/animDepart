@@ -95,7 +95,7 @@ module.exports = {
             await deleteFiles(releasePath, ['*.fla']);
             await archiveFolder(releasePath);
 
-            await createScreenshotWithTrigger(paths, true, gifSettings);
+            await createScreenshotWithTrigger(folderPath, true, gifSettings);
         }
     }
 };

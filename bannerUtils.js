@@ -215,9 +215,9 @@ function copyFolderSync(source, target) {
     }
 }
 
-async function createScreenshotWithTrigger(paths, createGif = true, gifSettings) {
+async function createScreenshotWithTrigger(folderPath, createGif = true, gifSettings) {
 
-    for (const folderPath of paths) {
+    
     const releasePath = await prepareReleaseFolder(folderPath, 'gifs');
     const htmlPath = path.join(releasePath, 'index.html');
     const outputDir = path.join(releasePath, 'img');
@@ -294,13 +294,12 @@ async function createScreenshotWithTrigger(paths, createGif = true, gifSettings)
     }, 30000);
 
     console.log('Ожидание триггеров для создания скриншотов...');
-    }
     
 }
 
-async function createScreenshotWithTriggerAdaptive(paths, createGif = true, gifSettings, maxWidth = '400') {
+async function  createScreenshotWithTriggerAdaptive(folderPath, createGif = true, gifSettings, maxWidth = '400') {
 
-    for (const folderPath of paths) {
+ 
     const releasePath = await prepareReleaseFolder(folderPath, 'gifs');
     const htmlPath = path.join(releasePath, 'index.html');
     const outputDir = path.join(releasePath, 'img');
@@ -392,7 +391,6 @@ async function createScreenshotWithTriggerAdaptive(paths, createGif = true, gifS
     }, 30000);
 
     console.log('Ожидание триггеров для создания скриншотов...');
-    }
     
 }
 
