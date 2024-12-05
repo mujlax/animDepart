@@ -27,6 +27,7 @@ const { processYandexRTB } = require('./processes/processYandexRTB');
 let localPlatforms = [];
 let cloudPlatforms = [];
 let useCloud = false;
+//let useGif= false;
 
 async function fetchCloudPlatforms() {
     try {
@@ -150,7 +151,11 @@ ipcMain.on('toggle-cloud', (event, enabled) => {
     event.reply('platforms-list', platforms.map((platform) => platform.name));
 });
 
-
+// Обработчик переключения чекбокса
+// ipcMain.on('toggle-gif', (event, enabled) => {
+//     useGif = enabled;
+//     console.log(`Использование гифок прошивок: ${useGif}`);
+// });
 
 
 
@@ -242,7 +247,7 @@ ipcMain.on('open-modal', (event) => {
     }
 });
 
-let gifSettings = { repeat: 0, quality: 10 }; // Настройки по умолчанию
+let gifSettings = { repeat: 0, quality: 10, useGif: false }; // Настройки по умолчанию
 
 ipcMain.on('apply-gif-settings', (event, settings) => {
     gifSettings = settings;

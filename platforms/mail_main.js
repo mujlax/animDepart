@@ -50,7 +50,11 @@ module.exports = {
             // await replaceImagesWithBase64(releasePath);
             await minifyJSFiles(releasePath);
             // bannerUtils.inlineJavaScript(releasePath);
-            await createScreenshotWithTriggerAdaptive(folderPath, true, gifSettings, '400')
+            console.log('!!!!!!!gifSettings.useGif ===' + gifSettings.useGif);
+            if (gifSettings.useGif) {
+                await createScreenshotWithTriggerAdaptive(folderPath, gifSettings, widthGif = '400');
+            }
+            
             await deleteFiles(releasePath, ['*.fla']);
             await archiveFolder(releasePath);
         }

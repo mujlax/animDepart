@@ -64,6 +64,10 @@
                 <input type="checkbox" id="cloud" />
                 Использовать прошивки из облака
             </label>
+            <label>
+                <input type="checkbox" id="gifCheckbox" />
+                Делать гифки
+            </label>
             <p></p>
             <label for="platform">Выберите площадку:</label>
             <select id="platform">
@@ -87,7 +91,7 @@
         
             <label for="quality">Качество GIF (1 - лучшее, 10 - хуже):</label>
             <input type="number" id="quality" name="quality" min="1" max="10" value="10">
-        
+            
             <button type="button" id="apply-settings">Применить настройки</button>
         </form>
     </div>
@@ -104,6 +108,7 @@
         const platformSelect = document.getElementById('platform');
 
         const cloudCheckbox = document.getElementById('cloud');
+        const gifCheckbox = document.getElementById('gifCheckbox');
 
         function updatePlatformList() {
             const useCloud = cloudCheckbox.checked;
@@ -112,6 +117,15 @@
 
         // Слушаем переключение чекбокса
         cloudCheckbox.addEventListener('change', updatePlatformList);
+
+        function checkboxGif() {
+            const repeat = parseInt(document.getElementById('repeat').value, 10);
+            const quality = parseInt(document.getElementById('quality').value, 10);
+            const useGif = document.getElementById('gifCheckbox').checked;
+            window.electron.applyGifSettings({ repeat, quality, useGif });
+        }
+
+        gifCheckbox.addEventListener('change', checkboxGif);
 
 
         window.onload = () => {
@@ -233,9 +247,10 @@
         document.getElementById('apply-settings').addEventListener('click', () => {
             const repeat = parseInt(document.getElementById('repeat').value, 10);
             const quality = parseInt(document.getElementById('quality').value, 10);
+            let gif = document.getElementById('gifCheckbox').checked;
 
-            window.electron.applyGifSettings({ repeat, quality });
-            console.log('Настройки GIF отправлены:', { repeat, quality });
+            window.electron.applyGifSettings({ repeat, quality, gif });
+            console.log('Настройки GIF отправлены:', { repeat, quality, gif });
         });
         
     </script>
