@@ -17,7 +17,7 @@ const {
 
 module.exports = {
     name: 'Mail_Main',
-    process: async (paths, userLink, platformWindow, gifSettings) => {
+    process: async (paths, userLink, platformWindow, platformSettings) => {
         userLink = await checkRequestLink(requestLink = false, userLink, platformWindow);
 
         for (const folderPath of paths) {
@@ -50,9 +50,8 @@ module.exports = {
             // await replaceImagesWithBase64(releasePath);
             await minifyJSFiles(releasePath);
             // bannerUtils.inlineJavaScript(releasePath);
-            console.log('!!!!!!!gifSettings.useGif ===' + gifSettings.useGif);
-            if (gifSettings.useGif) {
-                await createScreenshotWithTriggerAdaptive(folderPath, gifSettings, widthGif = '400');
+            if (platformSettings.useGif) {
+                await createScreenshotWithTriggerAdaptive(folderPath, platformSettings, widthGif = '400');
             }
             
             await deleteFiles(releasePath, ['*.fla']);

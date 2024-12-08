@@ -20,10 +20,6 @@ const CLOUD_URL = 'https://api.github.com/repos/mujlax/animDepartPlatforms/conte
 const { platformAPI } = require('./platform');
 const logCompressionToSheet = require('./platform/statistic/logCompressionToSheet');
 
-const { processAvitoNaAvito } = require('./processes/processAvitoNaAvito');
-const { processYandexRTB } = require('./processes/processYandexRTB');
-
-
 let localPlatforms = [];
 let cloudPlatforms = [];
 let useCloud = false;
@@ -247,11 +243,11 @@ ipcMain.on('open-modal', (event) => {
     }
 });
 
-let gifSettings = { repeat: 0, quality: 10, useGif: false }; // Настройки по умолчанию
+let platformSettings = { repeat: 0, quality: 10, useGif: false }; // Настройки по умолчанию
 
 ipcMain.on('apply-gif-settings', (event, settings) => {
-    gifSettings = settings;
-    console.log('Настройки GIF обновлены:', gifSettings);
+    platformSettings = settings;
+    console.log('Настройки GIF обновлены:', platformSettings);
 });
 
 
@@ -270,8 +266,8 @@ ipcMain.on('process-platform', async (event, { platformName, paths }) => {
 
 
         console.log("Передаем пути:" + paths)
-        await platform.process(paths, userLink, platformWindow, gifSettings);
-        console.log('ОТПРАВЛЯЕМ НАСТРОЙКИ ГИФ', gifSettings);
+        await platform.process(paths, userLink, platformWindow, platformSettings);
+        console.log('ОТПРАВЛЯЕМ НАСТРОЙКИ ГИФ', platformSettings);
         event.reply('platform-process-response', `Обработка завершена для платформы ${platformName}`);
     } else {
         event.reply('platform-process-response', `Платформа ${platformName} не найдена`);

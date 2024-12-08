@@ -297,7 +297,7 @@ async function createScreenshotWithTrigger(folderPath, createGif = true, gifSett
     
 }
 
-async function  createScreenshotWithTriggerAdaptive(folderPath, gifSettings, maxWidth = '400') {
+async function  createScreenshotWithTriggerAdaptive(folderPath, platformSettings, maxWidth = '400') {
 
  
     const releasePath = await prepareReleaseFolder(folderPath, 'gifs');
@@ -360,8 +360,7 @@ async function  createScreenshotWithTriggerAdaptive(folderPath, gifSettings, max
         console.log('Получен сигнал остановки.');
         stopTriggerReceived = true;
         await browser.close(); // Закрываем браузер
-        console.log('gifSettings.makeGif ==== '+ gifSettings.makeGif);
-        await generateGif(releasePath, gifSettings);
+        await generateGif(releasePath, platformSettings);
 
         
         deleteAllExceptImg(releasePath);
