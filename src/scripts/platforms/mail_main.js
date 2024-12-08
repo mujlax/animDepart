@@ -13,7 +13,7 @@ const {
     archiveFolder,
     downloadAndReplaceScript,
     createScreenshotWithTriggerAdaptive
-} = require('../bannerUtils');
+} = require('./utils/bannerUtils');
 
 module.exports = {
     name: 'Mail_Main',

@@ -4,14 +4,14 @@ const archiver = require('archiver');
 const tinify = require('tinify');
 const axios = require('axios');
 const { minify } = require('uglify-js');
-const { minimatch } = require('minimatch')
+const { minimatch } = require('minimatch');
 const { ipcMain } = require('electron');
 const cheerio = require('cheerio');
 const puppeteer = require('puppeteer');
 
 const GIFEncoder = require('gifencoder');
 const { Jimp } = require('jimp');
-const logCompressionToSheet = require('./platform/statistic/logCompressionToSheet');
+const logCompressionToSheet = require('../../statistic/logCompressionToSheet');
 
 // Задайте свой API-ключ для TinyPNG
 tinify.key = 'JvbcxzKlLyGscgvDrcSdpJxs5knj0r4n'; // Замените на ваш реальный API ключ от TinyPNG
@@ -215,7 +215,7 @@ function copyFolderSync(source, target) {
     }
 }
 
-async function createScreenshotWithTrigger(folderPath, createGif = true, gifSettings) {
+async function createScreenshotWithTrigger(folderPath, platformSettings) {
 
     
     const releasePath = await prepareReleaseFolder(folderPath, 'gifs');
@@ -263,9 +263,7 @@ async function createScreenshotWithTrigger(folderPath, createGif = true, gifSett
         console.log('Получен сигнал остановки.');
         stopTriggerReceived = true;
         await browser.close(); // Закрываем браузер
-        if (createGif) {
-            await generateGif(releasePath, gifSettings);
-        }
+        await generateGif(releasePath, platformSettings);
         
         deleteAllExceptImg(releasePath);
         
@@ -395,7 +393,7 @@ async function  createScreenshotWithTriggerAdaptive(folderPath, platformSettings
 
 
 
-async function generateGif(releasePath, gifSettings) {
+async function generateGif(releasePath, platformSettings) {
     const imgDir = path.join(releasePath, 'img');
 
     if (!fs.existsSync(imgDir)) {
@@ -431,9 +429,9 @@ async function generateGif(releasePath, gifSettings) {
     encoder.createReadStream().pipe(gifStream);
 
     encoder.start();
-    encoder.setRepeat(gifSettings.repeat);
+    encoder.setRepeat(platformSettings.repeat);
     encoder.setDelay(3000);
-    encoder.setQuality(gifSettings.quality);
+    encoder.setQuality(platformSettings.quality);
 
     for (const file of files) {
         const imgPath = path.join(imgDir, file);

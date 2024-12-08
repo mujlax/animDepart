@@ -1,7 +1,7 @@
 {
   "name": "my-electron-app",
   "version": "0.7.2",
-  "main": "main.js",
+  "main": "./src/scripts/core/main.js",
   "scripts": {
     "start": "electron .",
     "test": "echo \"Error: no test specified\" && exit 1",

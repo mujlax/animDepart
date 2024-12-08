@@ -2,7 +2,7 @@ const { dialog } = require('electron');
 const archiver = require('archiver');
 const fs = require('fs');
 const path = require('path');
-const logCompressionToSheet = require('./statistic/logCompressionToSheet');
+const logCompressionToSheet = require('../src/scripts/statistic/logCompressionToSheet');
 
 /**
  * Архивирует выбранные папки в проводнике Windows.

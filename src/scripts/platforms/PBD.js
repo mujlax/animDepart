@@ -15,11 +15,11 @@ const {
     createScreenshotWithTrigger,
     generateGif,
     deleteAllExceptImg
-} = require('../bannerUtils');
+} = require('./utils/bannerUtils');
 
 module.exports = {
     name: 'PBD',
-    process: async (paths, userLink, platformWindow, gifSettings) => {
+    process: async (paths, userLink, platformWindow, platformSettings) => {
         userLink = await checkRequestLink(requestLink = false, userLink, platformWindow);
 
         for (const folderPath of paths) {
@@ -95,7 +95,10 @@ module.exports = {
             await deleteFiles(releasePath, ['*.fla']);
             await archiveFolder(releasePath);
 
-            await createScreenshotWithTrigger(folderPath, true, gifSettings);
+            if (platformSettings.useGif) {
+                await createScreenshotWithTrigger(folderPath, platformSettings);
+            }
+            
         }
     }
 };

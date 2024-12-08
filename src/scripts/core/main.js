@@ -17,8 +17,8 @@ const CLOUD_URL = 'https://api.github.com/repos/mujlax/animDepartPlatforms/conte
 
 
 
-const { platformAPI } = require('./platform');
-const logCompressionToSheet = require('./platform/statistic/logCompressionToSheet');
+const { platformAPI } = require('../../../platform');
+const logCompressionToSheet = require('../statistic/logCompressionToSheet');
 
 let localPlatforms = [];
 let cloudPlatforms = [];
@@ -41,8 +41,8 @@ async function fetchCloudPlatforms() {
                     module: { exports: {} },
                     exports: {},
                     require: (moduleName) => {
-                        if (moduleName === '../bannerUtils') {
-                            return require(path.join(__dirname, 'bannerUtils')); // Корректный путь к модулю
+                        if (moduleName === './utils/bannerUtils') {
+                            return require(path.join(__dirname, '../platforms/utils/bannerUtils')); // Корректный путь к модулю
                         }
                         return require(moduleName);
                     },
@@ -68,7 +68,7 @@ let lastPlayedSound = null; // Последний проигранный зву�
 
 // Загрузка звуков из папки /sounds
 function loadSounds() {
-    const soundDirectory = path.join(__dirname, 'sounds');
+    const soundDirectory = path.join(__dirname, '../../assets/sounds');
     const soundFiles = fs.readdirSync(soundDirectory).filter(file => file.endsWith('.mp3'));
 
     soundSequences = {}; // Очищаем словарь перед загрузкой
@@ -108,7 +108,7 @@ ipcMain.on('play-last-sound', (event) => {
 
 // Функция загрузки локальных платформ
 function loadLocalPlatforms() {
-    const platformsDir = path.join(__dirname, 'platforms');
+    const platformsDir = path.join(__dirname, '../platforms');
     const platforms = [];
     const files = fs.readdirSync(platformsDir);
 
@@ -168,7 +168,7 @@ function createWindow() {
         },
     });
 
-    win.loadFile('index.html');
+    win.loadFile('./src/scripts/core/index.html');
     // win.webContents.openDevTools();
 }
 
@@ -523,14 +523,16 @@ async function generateGif(releasePath) {
     console.log(`Размеры GIF: ${width}x${height}`);
 
     const encoder = new GIFEncoder(width, height);
+    console.log(`GIFEncoder` + encoder);
     const gifStream = fs.createWriteStream(gifPath);
     encoder.createReadStream().pipe(gifStream);
-
+    console.log(`createReadStream`);
     encoder.start();
-    encoder.setRepeat(gifSettings.repeat);
+    encoder.setRepeat(platformSettings.repeat);
     encoder.setDelay(3000);
-    encoder.setQuality(gifSettings.quality);
+    encoder.setQuality(platformSettings.repeat);
 
+    console.log(`add settings gif`);
     for (const file of files) {
         const imgPath = path.join(imgDir, file);
 

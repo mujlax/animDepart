@@ -15,7 +15,7 @@ const {
     deleteFiles,
     archiveFolder,
     downloadAndReplaceScript
-} = require('../bannerUtils');
+} = require('./utils/bannerUtils');
 
 async function createScreenshotWithTrigger(releasePath) {
     const htmlPath = path.join(releasePath, 'index.html');
