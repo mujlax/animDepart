@@ -91,6 +91,7 @@
         
             <label for="quality">Качество GIF (1 - лучшее, 10 - хуже):</label>
             <input type="number" id="quality" name="quality" min="1" max="10" value="10">
+            <input type="number" id="width" name="Ширина для растяжек" value="0">
             
             <button type="button" id="apply-settings">Применить настройки</button>
         </form>
@@ -121,8 +122,9 @@
         function checkboxGif() {
             const repeat = parseInt(document.getElementById('repeat').value, 10);
             const quality = parseInt(document.getElementById('quality').value, 10);
+            const width = parseInt(document.getElementById('width').value, 10);
             const useGif = document.getElementById('gifCheckbox').checked;
-            window.electron.applyGifSettings({ repeat, quality, useGif });
+            window.electron.applyGifSettings({ repeat, quality, useGif, width });
         }
 
         gifCheckbox.addEventListener('change', checkboxGif);
