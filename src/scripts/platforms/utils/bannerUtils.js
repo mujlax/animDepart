@@ -217,7 +217,7 @@ function copyFolderSync(source, target) {
 
 async function createScreenshotWithTrigger(folderPath, platformSettings) {
 
-    
+
     const releasePath = await prepareReleaseFolder(folderPath, 'gifs');
     const htmlPath = path.join(releasePath, 'index.html');
     const outputDir = path.join(releasePath, 'img');
@@ -226,6 +226,25 @@ async function createScreenshotWithTrigger(folderPath, platformSettings) {
     if (!fs.existsSync(htmlPath)) {
         throw new Error(`Файл index.html не найден по пути: ${htmlPath}`);
     }
+    console.error('platformSettings.width' + platformSettings.width);
+    if (platformSettings.width != 0) {
+        // Чтение и обновление HTML с помощью cheerio
+        const htmlContent = fs.readFileSync(htmlPath, 'utf8');
+        const $ = cheerio.load(htmlContent);
+
+        const bannerDiv = $('#banner');
+        if (bannerDiv.length === 0) {
+            console.error('Div с id="banner" не найден.');
+        } else {
+            bannerDiv.attr('style', `max-width: ${platformSettings.width}px;`);
+            console.log(`Стиль "max-width: ${platformSettings.width}px;" добавлен к div#banner`);
+            // Запись изменённого HTML обратно в файл
+            fs.writeFileSync(htmlPath, $.html(), 'utf8');
+        }
+    }
+
+
+
 
     // Создаём папку для скриншотов, если её нет
     if (!fs.existsSync(outputDir)) {
@@ -264,9 +283,9 @@ async function createScreenshotWithTrigger(folderPath, platformSettings) {
         stopTriggerReceived = true;
         await browser.close(); // Закрываем браузер
         await generateGif(releasePath, platformSettings);
-        
+
         deleteAllExceptImg(releasePath);
-        
+
     });
 
     // Добавляем обработчик для консольных триггеров
@@ -279,7 +298,7 @@ async function createScreenshotWithTrigger(folderPath, platformSettings) {
                 window.triggerScreenshot();
             } else if (args.includes('gif-stop')) {
                 window.triggerScreenshotStop();
-                
+
             }
         };
     });
@@ -292,12 +311,12 @@ async function createScreenshotWithTrigger(folderPath, platformSettings) {
     }, 30000);
 
     console.log('Ожидание триггеров для создания скриншотов...');
-    
+
 }
 
-async function  createScreenshotWithTriggerAdaptive(folderPath, platformSettings, maxWidth = '400') {
+async function createScreenshotWithTriggerAdaptive(folderPath, platformSettings, maxWidth = '400') {
 
- 
+
     const releasePath = await prepareReleaseFolder(folderPath, 'gifs');
     const htmlPath = path.join(releasePath, 'index.html');
     const outputDir = path.join(releasePath, 'img');
@@ -360,9 +379,9 @@ async function  createScreenshotWithTriggerAdaptive(folderPath, platformSettings
         await browser.close(); // Закрываем браузер
         await generateGif(releasePath, platformSettings);
 
-        
+
         deleteAllExceptImg(releasePath);
-        
+
     });
 
     // Добавляем обработчик для консольных триггеров
@@ -375,7 +394,7 @@ async function  createScreenshotWithTriggerAdaptive(folderPath, platformSettings
                 window.triggerScreenshot();
             } else if (args.includes('gif-stop')) {
                 window.triggerScreenshotStop();
-                
+
             }
         };
     });
@@ -388,7 +407,7 @@ async function  createScreenshotWithTriggerAdaptive(folderPath, platformSettings
     }, 30000);
 
     console.log('Ожидание триггеров для создания скриншотов...');
-    
+
 }
 
 
@@ -423,7 +442,7 @@ async function generateGif(releasePath, platformSettings) {
     const gifPath = path.join(path.dirname(releasePath), `${width}x${height}.gif`);
     console.log(`Размеры GIF: ${width}x${height}`);
 
-    
+
     const encoder = new GIFEncoder(width, height);
     const gifStream = fs.createWriteStream(gifPath);
     encoder.createReadStream().pipe(gifStream);

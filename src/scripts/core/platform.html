@@ -21,6 +21,7 @@
         }
 
         .drop-zone {
+            width: 100%;
             border: 2px dashed #ccc;
             border-radius: 10px;
             padding: 50px 20px;
@@ -40,6 +41,20 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             white-space: pre-wrap;
+        }
+
+         .gif-settings {
+            display: none;
+            width: 200px;
+            /* background-color: rgb(210, 210, 210); */
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .container_drop {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
         }
     </style>
 </head>
@@ -76,25 +91,30 @@
                 <!-- Вы можете добавить другие площадки здесь -->
             </select>
         </div>
-        <div class="drop-zone" id="drop-zone">
-            Перетащите папки сюда
+        <div class="container_drop">
+            <div class="drop-zone" id="drop-zone">
+                Перетащите папки сюда
+            </div>
+            <form class="gif-settings" id="gif-settings">
+                <label for="repeat">Цикличность GIF:</label>
+                <select id="repeat" name="repeat">
+                    <option value="0" selected>Зациклен</option>
+                    <option value="3">3 раза</option>
+                </select>
+    
+                <label for="quality">Качество GIF:</label>
+                <input type="range" id="quality" name="quality" min="1" max="10" value="10">
+                <label for="width">Длина растяжки</label>
+                <input type="number" id="width" name="Ширина для растяжек" value="0">
+    
+                <button type="button" id="apply-settings">Применить</button>
+            </form>
         </div>
+        
         <div class="output" id="output">
             Вывод работы будет здесь.
         </div>
-        <form id="gif-settings">
-            <label for="repeat">Цикличность GIF:</label>
-            <select id="repeat" name="repeat">
-                <option value="0" selected>Зациклен</option>
-                <option value="3">3 раза</option>
-            </select>
         
-            <label for="quality">Качество GIF (1 - лучшее, 10 - хуже):</label>
-            <input type="number" id="quality" name="quality" min="1" max="10" value="10">
-            <input type="number" id="width" name="Ширина для растяжек" value="0">
-            
-            <button type="button" id="apply-settings">Применить настройки</button>
-        </form>
     </div>
 
     <script>
@@ -125,6 +145,15 @@
             const width = parseInt(document.getElementById('width').value, 10);
             const useGif = document.getElementById('gifCheckbox').checked;
             window.electron.applyGifSettings({ repeat, quality, useGif, width });
+            console.log('Настройки GIF отправлены:', { repeat, quality, useGif, width });
+
+            const gifSettings = document.getElementById('gif-settings');
+            if(useGif) {
+                gifSettings.style.display = 'flex';
+            } else {
+                gifSettings.style.display = 'none';
+            }
+            
         }
 
         gifCheckbox.addEventListener('change', checkboxGif);
@@ -189,7 +218,7 @@
 
         });
 
-        
+
 
         // Слушаем ответ от основного процесса
         window.electron.on('platform-process-response', (message) => {
@@ -249,12 +278,13 @@
         document.getElementById('apply-settings').addEventListener('click', () => {
             const repeat = parseInt(document.getElementById('repeat').value, 10);
             const quality = parseInt(document.getElementById('quality').value, 10);
-            let gif = document.getElementById('gifCheckbox').checked;
+            let useGif = document.getElementById('gifCheckbox').checked;
+            const width = parseInt(document.getElementById('width').value, 10);
 
-            window.electron.applyGifSettings({ repeat, quality, gif });
-            console.log('Настройки GIF отправлены:', { repeat, quality, gif });
+            window.electron.applyGifSettings({ repeat, quality, useGif, width });
+            console.log('Настройки GIF отправлены:', { repeat, quality, useGif, width });
         });
-        
+
     </script>
 </body>
 

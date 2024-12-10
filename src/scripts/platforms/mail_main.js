@@ -12,7 +12,7 @@ const {
     deleteFiles,
     archiveFolder,
     downloadAndReplaceScript,
-    createScreenshotWithTriggerAdaptive
+    createScreenshotWithTrigger
 } = require('./utils/bannerUtils');
 
 module.exports = {
@@ -51,7 +51,7 @@ module.exports = {
             await minifyJSFiles(releasePath);
             // bannerUtils.inlineJavaScript(releasePath);
             if (platformSettings.useGif) {
-                await createScreenshotWithTriggerAdaptive(folderPath, platformSettings, widthGif = '400');
+                await createScreenshotWithTrigger(folderPath, platformSettings);
             }
             
             await deleteFiles(releasePath, ['*.fla']);
