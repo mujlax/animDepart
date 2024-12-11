@@ -8,6 +8,7 @@ const { minimatch } = require('minimatch');
 const { ipcMain } = require('electron');
 const cheerio = require('cheerio');
 const puppeteer = require('puppeteer');
+const canvas = require('canvas'); 
 
 const GIFEncoder = require('gifencoder');
 const { Jimp } = require('jimp');
@@ -215,8 +216,8 @@ function copyFolderSync(source, target) {
     }
 }
 
-async function createScreenshotWithTrigger(folderPath, platformSettings) {
-
+async function createScreenshotWithTrigger2(folderPath, platformSettings) {
+    if (platformSettings.useGif != true) return;
 
     const releasePath = await prepareReleaseFolder(folderPath, 'gifs');
     const htmlPath = path.join(releasePath, 'index.html');
@@ -313,6 +314,98 @@ async function createScreenshotWithTrigger(folderPath, platformSettings) {
     console.log('Ожидание триггеров для создания скриншотов...');
 
 }
+
+
+
+async function createScreenshotWithTrigger(folderPath, platformSettings) {
+    if (platformSettings.useGif !== true) return;
+
+    const releasePath = await prepareReleaseFolder(folderPath, 'gifs');
+    const htmlPath = path.join(releasePath, 'index.html');
+    const outputDir = path.join(releasePath, 'img');
+
+    // Проверяем наличие index.html
+    if (!fs.existsSync(htmlPath)) {
+        throw new Error(`Файл index.html не найден по пути: ${htmlPath}`);
+    }
+
+    // Чтение и обновление HTML с помощью cheerio
+    if (platformSettings.width != 0) {
+        const htmlContent = fs.readFileSync(htmlPath, 'utf8');
+        const $ = cheerio.load(htmlContent);
+
+        const bannerDiv = $('#banner');
+        if (bannerDiv.length === 0) {
+            console.error('Div с id="banner" не найден.');
+        } else {
+            bannerDiv.attr('style', `max-width: ${platformSettings.width}px;`);
+            console.log(`Стиль "max-width: ${platformSettings.width}px;" добавлен к div#banner`);
+            // Запись изменённого HTML обратно в файл
+            fs.writeFileSync(htmlPath, $.html(), 'utf8');
+        }
+    }
+
+    // Создаём папку для скриншотов, если её нет
+    if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    let screenshotCounter = 1; // Счётчик для названий файлов
+    let stopTriggerReceived = false; // Флаг для остановки
+
+    // Загружаем index.html с использованием нативных браузерных возможностей
+    const browserWindow = window.open(`file://${htmlPath}`, '_blank');
+
+    // Устанавливаем обработчик для скриншотов
+    function triggerScreenshot() {
+        if (stopTriggerReceived) return;
+
+        const canvasElement = document.querySelector('canvas#canvas');
+        if (!canvasElement) {
+            console.error('<canvas> с id="canvas" не найден!');
+            return;
+        }
+
+        // Используем toDataURL() для извлечения изображения
+        const dataUrl = canvasElement.toDataURL('image/png');
+        const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
+
+        const outputPath = path.join(outputDir, `screenshot_${screenshotCounter}.png`);
+        // Сохраняем картинку как файл (переходим в Node.js, если нужно)
+        fs.writeFileSync(outputPath, base64Data, 'base64');
+        console.log(`Скриншот ${screenshotCounter} сохранён в ${outputPath}`);
+        screenshotCounter++;
+    }
+
+    // Устанавливаем обработчик для остановки
+    function triggerScreenshotStop() {
+        console.log('Получен сигнал остановки.');
+        stopTriggerReceived = true;
+        browserWindow.close(); // Закрываем окно браузера
+        generateGif(releasePath, platformSettings);
+
+        deleteAllExceptImg(releasePath);
+    }
+
+    // Добавляем обработчик для консольных триггеров
+    console.debug = function(...args) {
+        if (args.includes('gif')) {
+            triggerScreenshot();
+        } else if (args.includes('gif-stop')) {
+            triggerScreenshotStop();
+        }
+    };
+
+    setTimeout(() => {
+        console.log('Таймер остановки сработал.');
+        stopTriggerReceived = true;
+        browserWindow.close();
+        deleteAllExceptImg(releasePath);
+    }, 30000);
+
+    console.log('Ожидание триггеров для создания скриншотов...');
+}
+
 
 async function createScreenshotWithTriggerAdaptive(folderPath, platformSettings, maxWidth = '400') {
 

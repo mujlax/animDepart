@@ -50,9 +50,9 @@ module.exports = {
             // await replaceImagesWithBase64(releasePath);
             await minifyJSFiles(releasePath);
             // bannerUtils.inlineJavaScript(releasePath);
-            if (platformSettings.useGif) {
-                await createScreenshotWithTrigger(folderPath, platformSettings);
-            }
+            
+            await createScreenshotWithTrigger(releasePath, platformSettings);
+            
             
             await deleteFiles(releasePath, ['*.fla']);
             await archiveFolder(releasePath);

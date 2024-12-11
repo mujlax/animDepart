@@ -41,7 +41,7 @@ module.exports = {
             await insertScriptAfterMarker(releasePath,
                 '</body>',
                 `<script type="text/javascript">buzzTrack('loaded');</script>\n</body>`,
-                true
+                deleteMarker = true
             );
 
             try {
