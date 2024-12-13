@@ -68,9 +68,27 @@ body {
     border: 1px solid rgba(211, 211, 211, 0.532);
     border-radius: 10px;
 }
+.section-1_min {
+    display: flex;
+    flex-direction: column;
+    margin: 20px;
+    padding: 5px 10px;
+    border: 1px solid rgba(211, 211, 211, 0.532);
+    border-radius: 10px;
+}
 
 .buttons {
     display: flex;
+    padding: 20px;
+    justify-content: center;
+    
+    gap: 10px;
+    align-items: center; 
+}
+
+.buttons_min {
+    display: flex;
+    flex-direction: column;
     padding: 20px;
     justify-content: center;
     
@@ -122,6 +140,7 @@ pre {
     gap: 10px;
     align-items: center;
     padding: 10px 15px;
+    min-height: 36px;
 
     font-size: 15px;
     border: none;

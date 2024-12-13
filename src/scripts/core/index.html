@@ -18,7 +18,8 @@
 </head>
 
 <body>
-    <div class="container">
+    <!-- <button id="alwaysOnTopToggle">minimize</button> -->
+    <div class="container" id="container">
         <div class="header">
             <!-- <button href="./platform.html"><a href="./platform.html">Прошить</a></button> -->
             <h1>Animation Department Scripts <span class="txtVersion" style="color: lightgray;">ver 0.7.2</span></h1>
@@ -26,13 +27,14 @@
         <div class="section-1">
             <h2>Работа с папками</h2>
             <div class="buttons">
-                <button class="glow-on-hover" id="archive-button">
-                    <i class="fa-regular fa-file-zipper fa-xl"></i> Архивировать </br>выделенные папки
+                <button title="Архивация с удалением .fla и .DS_store (Винда: перетащить папки. Мак: можно выбирать в finder)" class="glow-on-hover" id="archive-button">
+                    <i class="fa-solid fa-file-zipper fa-xl"></i> Архивировать </br>выделенные папки
                 </button>
-                <button style="" class="glow-on-hover" id="compress-button">
-                    <i class="fa-regular fa-file-image fa-xl"></i>Чпокнуть картинки </br>через TinyPNG
+                <button title="Сжатие картинок (Винда: перетащить папки. Мак: можно выбирать в finder)" class="glow-on-hover" id="compress-button">
+                    <i class="fa-solid fa-file-image fa-xl"></i>Чпокнуть картинки </br>через TinyPNG
                     <p style="font-size: 13px; font-style: italic;" id="countMonths">0/500</p>
                 </button>
+                <button title="Обычная архивация без удаления файлов (Винда: скоро. Мак: можно)" class="glow-on-hover" id="default_archive-button"><i class="fa-solid fa-box-archive fa-xl"></i>Архивация </br>для Дани</button>
             </div>
 
         </div>
@@ -44,16 +46,13 @@
             <div class="buttons">
                 <a href="./platform.html"><button class="glow-on-hover glow-on-hover-dev"
                         id="proshivka">Прошивка</button></a>
-                <button class="glow-on-hover glow-on-hover-dev" id="search-button">Проверить </br>наличие
-                    строки</button>
                 <!-- <button class="glow-on-hover glow-on-hover-dev" id="stats-button">Показать общую статистику</button> -->
                 <button class="glow-on-hover glow-on-hover-dev" id="minify-button">Минимизировать </br> выделенные файлы
                     .js</button>
                 <button class="glow-on-hover glow-on-hover-dev" id="replace-images-button">Картинки в Base64</button>
-               
+                
+
                 <button class="glow-on-hover glow-on-hover-dev" id="image-button">Сделать картинки</button>
-                <!-- <button class="glow-on-hover glow-on-hover-dev" id="archive-button">Проверить </br>наличие строки</button>
-                <button class="glow-on-hover glow-on-hover-dev" id="archive-button">Проверить </br>наличие строки</button> -->
             </div>
             <form id="gif-settings">
                 <label for="repeat">Цикличность GIF:</label>
@@ -74,6 +73,24 @@
 
     </div>
 
+    <div class="container_2" id="container_2">
+
+        <div class="buttons_min">
+            <button title="Архивация с удалением .fla и .DS_store (Винда: перетащить папки. Мак: можно выбирать в finder)" class="glow-on-hover" id="archive-button_min">
+                <i class="fa-solid fa-file-zipper fa-xl"></i>
+            </button>
+            <button title="Сжатие картинок (Винда: перетащить папки. Мак: можно выбирать в finder)" class="glow-on-hover" id="compress-button_min">
+                <i class="fa-solid fa-file-image fa-xl"></i>
+            </button>
+            <button title="Обычная архивация без удаления файлов (Винда/Мак: Только перетаскивание)" class="glow-on-hover" id="default_archive-button_min"><i class="fa-solid fa-box-archive fa-xl"></i></button>
+        </div>
+    </div>
+
+    <pre id="output"></pre>
+
+
+    </div>
+
     <div class="credits">
         <p class="credits__txt">scripts by <a href="https://t.me/deonease">@deonease</a></p>
     </div>
@@ -82,6 +99,30 @@
 
         const inputSequence = []; // Текущая последовательность
         let soundSequences = {}; // Загруженные комбинации звуков
+        const container = document.getElementById('container');
+        const container_2 = document.getElementById('container_2');
+
+        window.onresize = function () {
+            changeConatiner();
+        }
+        function changeConatiner() {
+            const nowW = window.innerWidth;
+
+            if (nowW < 300) {
+                container.style.display = "none";
+                container_2.style.display = "block";
+                window.electron.toggleAlwaysOnTop(true);
+            } else {
+                container.style.display = "block";
+                container_2.style.display = "none";
+                window.electron.toggleAlwaysOnTop(false);
+            }
+            console.log(nowW);
+        }
+
+        changeConatiner();
+
+
 
         // Запрашиваем звуки при загрузке
         window.electron.requestSoundSequences();
@@ -150,7 +191,7 @@
 
         const archiveButton = document.getElementById('archive-button');
 
-        function dragAndDropBtn(elementId) {
+        function dragAndDropBtn(elementId, elementEvent = elementId) {
             const archiveButton = document.getElementById(`${elementId}`);
             console.log("function dragAndDropBtn archiveButton", archiveButton)
             archiveButton.addEventListener('dragover', (event) => {
@@ -180,13 +221,18 @@
                     }
                 }
 
-                window.electron.send(`${elementId}`, paths);
+                window.electron.send(`${elementEvent}`, paths);
             });
         }
 
         dragAndDropBtn('archive-button');
+        dragAndDropBtn('archive-button_min', 'archive-button');
         dragAndDropBtn('compress-button');
+        dragAndDropBtn('compress-button_min', 'compress-button');
         dragAndDropBtn('image-button');
+        dragAndDropBtn('default_archive-button');
+        dragAndDropBtn('default_archive-button_min', 'default_archive-button');
+        
 
         // // Подсветка при наведении
         // archiveButton.addEventListener('dragover', (event) => {
@@ -225,6 +271,10 @@
             window.electron.send('run-archive');
         });
 
+        document.getElementById('archive-button_min').addEventListener('click', () => {
+            window.electron.send('run-archive');
+        });
+
         window.electron.on('archive-response', (response) => {
             document.getElementById('output').textContent = response;
         });
@@ -241,6 +291,9 @@
 
         // Обработчик для кнопки сжатия изображений
         document.getElementById('compress-button').addEventListener('click', () => {
+            window.electron.send('run-compress');
+        });
+        document.getElementById('compress-button_min').addEventListener('click', () => {
             window.electron.send('run-compress');
         });
 

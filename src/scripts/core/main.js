@@ -154,10 +154,10 @@ ipcMain.on('toggle-cloud', (event, enabled) => {
 // });
 
 
-
+let win;
 function createWindow() {
 
-    const win = new BrowserWindow({
+        win = new BrowserWindow({
         width: 900,
         height: 600,
         webPreferences: {
@@ -166,6 +166,7 @@ function createWindow() {
             contextIsolation: true,
             enableRemoteModule: true
         },
+        
     });
 
     win.loadFile('./src/scripts/core/index.html');
@@ -192,9 +193,14 @@ app.on('activate', () => {
     }
 });
 
+
+
 let platformWindow = null;
 
-
+ipcMain.on('toggle-always-on-top', (event, enable) => {
+    win.setAlwaysOnTop(enable);
+    //event.reply('always-on-top-updated', enable);
+});
 
 ipcMain.on('register-platform-window', (event) => {
     platformWindow = BrowserWindow.getFocusedWindow();
@@ -314,6 +320,66 @@ ipcMain.on('archive-button', async (event, paths) => {
         });
         archive.finalize();
     });
+});
+
+ipcMain.on('default_archive-button', async (event, paths) => {
+    if (!paths || paths.length === 0) {
+        event.reply('archive-response', 'Не выбраны файлы или папки для архивации.');
+        return;
+    }
+
+    // Определяем имя ZIP-архива
+    let archiveName;
+    if (paths.length === 1 && fs.statSync(paths[0]).isDirectory()) {
+        // Если выбрана одна папка
+        archiveName = `${path.basename(paths[0])}.zip`;
+    } else {
+        // Если выбраны файлы или несколько элементов
+        const parentFolder = path.dirname(paths[0]); // Папка первого элемента
+        const folderName = path.basename(parentFolder);
+        archiveName = `${folderName}.zip`;
+    }
+
+    const outputZipPath = path.join(path.dirname(paths[0]), archiveName);
+
+    // Создаем поток записи для архива
+    const output = fs.createWriteStream(outputZipPath);
+    const archive = archiver('zip', {
+        zlib: { level: 9 } // Уровень сжатия
+    });
+
+    output.on('close', () => {
+        event.reply(
+            'archive-response',
+            `Архивирование завершено успешно. Архив создан: ${archiveName}`
+        );
+        logCompressionToSheet(paths.length, "Архивация");
+    });
+
+    archive.on('error', (err) => {
+        console.error(`Ошибка архивации: ${err.message}`);
+        event.reply('archive-response', `Ошибка архивации: ${err.message}`);
+    });
+
+    archive.pipe(output);
+
+    // Добавляем выбранные файлы и папки в архив
+    for (const itemPath of paths) {
+        const itemName = path.basename(itemPath);
+
+        if (fs.statSync(itemPath).isDirectory()) {
+            // Если это папка, добавляем её содержимое
+            archive.glob('**/*', {
+                cwd: itemPath,
+                
+            });
+        } else {
+            // Если это файл, добавляем его в архив
+            archive.file(itemPath, { name: itemName });
+        }
+    }
+
+    await archive.finalize();
 });
 
 ipcMain.on('compress-button', async (event, paths) => {
