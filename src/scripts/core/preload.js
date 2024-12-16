@@ -21,4 +21,6 @@ contextBridge.exposeInMainWorld('electron', {
     playLastSound: () => ipcRenderer.send('play-last-sound'),
     applyGifSettings: (settings) => ipcRenderer.send('apply-gif-settings', settings),
     toggleAlwaysOnTop: (enable) => ipcRenderer.send('toggle-always-on-top', enable),
+    logMessage: (message) => ipcRenderer.send('log-message', message),
+    onLogMessage: (callback) => ipcRenderer.on('log-message', (event, message) => callback(message))
 });

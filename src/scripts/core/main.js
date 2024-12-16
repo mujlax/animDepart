@@ -1,6 +1,5 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const { exec } = require('child_process');
 const fs = require('fs');
 const archiver = require('archiver');
 const axios = require('axios'); // Для загрузки файлов
@@ -14,16 +13,65 @@ const { Jimp } = require('jimp');
 tinify.key = 'JvbcxzKlLyGscgvDrcSdpJxs5knj0r4n';
 
 const CLOUD_URL = 'https://api.github.com/repos/mujlax/animDepartPlatforms/contents/platforms';
-
-
-
 const { platformAPI } = require('../../../platform');
 const logCompressionToSheet = require('../statistic/logCompressionToSheet');
 
 let localPlatforms = [];
 let cloudPlatforms = [];
 let useCloud = false;
-//let useGif= false;
+let win; //Окно
+let soundSequences = {}; // Словарь звуков
+let lastPlayedSound = null; // Последний проигранный звук
+let platformSettings = { repeat: 0, quality: 10, useGif: false }; // Настройки по умолчанию
+let platformWindow = null;
+
+function createWindow() {
+
+        win = new BrowserWindow({
+        width: 900,
+        height: 600,
+        webPreferences: {
+            preload: path.join(__dirname, 'preload.js'),
+            nodeIntegration: true,
+            contextIsolation: true,
+            enableRemoteModule: true
+        },
+        
+    });
+
+    win.loadFile('./src/scripts/core/index.html');
+    // win.webContents.openDevTools();
+}
+
+app.on('ready', async () => {
+    loadSounds();   
+    await initializePlatforms();
+    createWindow();
+});
+
+
+
+app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+        app.quit();
+    }
+});
+
+app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow();
+    }
+});
+
+
+
+// Инициализация платформ при запуске приложения
+async function initializePlatforms() {
+    localPlatforms = loadLocalPlatforms();
+    cloudPlatforms = await fetchCloudPlatforms();
+    console.log('Локальные платформы:', localPlatforms.map((p) => p.name));
+    console.log('Облачные платформы:', cloudPlatforms.map((p) => p.name));
+}
 
 async function fetchCloudPlatforms() {
     try {
@@ -63,8 +111,6 @@ async function fetchCloudPlatforms() {
     }
 }
 
-let soundSequences = {}; // Словарь звуков
-let lastPlayedSound = null; // Последний проигранный звук
 
 // Загрузка звуков из папки /sounds
 function loadSounds() {
@@ -123,16 +169,13 @@ function loadLocalPlatforms() {
     return platforms;
 }
 
-// Инициализация платформ при запуске приложения
-async function initializePlatforms() {
-    localPlatforms = loadLocalPlatforms();
-    cloudPlatforms = await fetchCloudPlatforms();
-    console.log('Локальные платформы:', localPlatforms.map((p) => p.name));
-    console.log('Облачные платформы:', cloudPlatforms.map((p) => p.name));
-}
 
 
-
+ // Отправляем сообщение в рендер, чтобы оно отобразилось в интерфейсе
+ipcMain.on('log-message', (event, message) => {
+   
+    win.webContents.send('log-message', message);
+});
 // Обработчик для запроса платформ
 ipcMain.on('get-platforms', async (event) => {
     const platforms = useCloud ? cloudPlatforms : localPlatforms;
@@ -154,48 +197,15 @@ ipcMain.on('toggle-cloud', (event, enabled) => {
 // });
 
 
-let win;
-function createWindow() {
 
-        win = new BrowserWindow({
-        width: 900,
-        height: 600,
-        webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
-            nodeIntegration: true,
-            contextIsolation: true,
-            enableRemoteModule: true
-        },
-        
-    });
 
-    win.loadFile('./src/scripts/core/index.html');
-    // win.webContents.openDevTools();
-}
 
-app.on('ready', async () => {
-    loadSounds();   
-    await initializePlatforms();
-    createWindow();
+
+
+ipcMain.on('log-message', (event, message) => {
+    // Отправляем сообщение в рендер, чтобы оно отобразилось в интерфейсе
+    win.webContents.send('log-message', message);
 });
-
-
-
-app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-        app.quit();
-    }
-});
-
-app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-        createWindow();
-    }
-});
-
-
-
-let platformWindow = null;
 
 ipcMain.on('toggle-always-on-top', (event, enable) => {
     win.setAlwaysOnTop(enable);
@@ -249,7 +259,7 @@ ipcMain.on('open-modal', (event) => {
     }
 });
 
-let platformSettings = { repeat: 0, quality: 10, useGif: false }; // Настройки по умолчанию
+
 
 ipcMain.on('apply-gif-settings', (event, settings) => {
     platformSettings = settings;

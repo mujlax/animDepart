@@ -41,8 +41,8 @@
         <div class="section-1">
             <h2>В разработке</h2>
             </br>
-            <label for="inputStroke">Строчка</label>
-            <input value="<meta name=" type="text" id="search-input" placeholder="  Введите строку для поиска">
+            <!-- <label for="inputStroke">Строчка</label>
+            <input value="<meta name=" type="text" id="search-input" placeholder="  Введите строку для поиска"> -->
             <div class="buttons">
                 <a href="./platform.html"><button class="glow-on-hover glow-on-hover-dev"
                         id="proshivka">Прошивка</button></a>
@@ -280,14 +280,14 @@
         });
 
         // Обработчик для кнопки поиска
-        document.getElementById('search-button').addEventListener('click', () => {
-            const searchString = document.getElementById('search-input').value;
-            window.electron.send('run-search', searchString);
-        });
+        // document.getElementById('search-button').addEventListener('click', () => {
+        //     const searchString = document.getElementById('search-input').value;
+        //     window.electron.send('run-search', searchString);
+        // });
 
-        window.electron.on('search-response', (response) => {
-            document.getElementById('output').textContent = response;
-        });
+        // window.electron.on('search-response', (response) => {
+        //     document.getElementById('output').textContent = response;
+        // });
 
         // Обработчик для кнопки сжатия изображений
         document.getElementById('compress-button').addEventListener('click', () => {

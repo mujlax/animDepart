@@ -17,6 +17,8 @@ const logCompressionToSheet = require('../../statistic/logCompressionToSheet');
 // Задайте свой API-ключ для TinyPNG
 tinify.key = 'JvbcxzKlLyGscgvDrcSdpJxs5knj0r4n'; // Замените на ваш реальный API ключ от TinyPNG
 
+
+
 function inlineJavaScript(folderPath) {
     const jsPath = path.join(folderPath, 'index.js');
     const htmlPath = path.join(folderPath, 'index.html');
@@ -616,7 +618,6 @@ async function insertScriptAfterMarker(folderPath, marker, scriptToInsert, delet
     }
 
     console.log(`scriptToInsert: ${scriptToInsert}`);
-
     // Чтение содержимого файла
     let htmlContent = fs.readFileSync(htmlPath, 'utf8');
 
