@@ -60,7 +60,7 @@ body {
 }
 
 
-.section-1 {
+.section-1, .section-2 {
     display: flex;
     flex-direction: column;
     margin: 20px;
@@ -95,6 +95,11 @@ body {
     gap: 10px;
     align-items: center; 
 }
+button p {
+    font-size: 13px; 
+    font-style: italic;
+}
+
 
 input {
     border: 1px solid lightgray;
@@ -139,6 +144,7 @@ pre {
     flex-direction: row;
     gap: 10px;
     align-items: center;
+    justify-content: center;
     padding: 10px 15px;
     min-height: 36px;
 
@@ -151,6 +157,7 @@ pre {
     position: relative;
     z-index: 0;
     border-radius: 10px;
+    
 }
 
 .glow-on-hover:before {
@@ -241,4 +248,34 @@ pre {
     0% { background-position: 0 0; }
     50% { background-position: 400% 0; }
     100% { background-position: 0 0; }
+}
+
+@media (max-width: 500px) {
+    /* Скрыть только <span> внутри кнопок */
+    .section-1 button span {
+        display: none;
+    }
+
+    .buttons {
+        flex-direction: column;
+        
+    }
+
+    .btn-compress {
+        padding-top: 20px;
+        flex-wrap: wrap;
+    }
+
+    button p {
+        padding-top: 5px;
+        font-size: 7px;
+    }
+
+    .section-1 {
+        all: unset;
+    }
+
+    .section-2 {
+        display: none;
+    }
 }

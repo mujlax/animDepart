@@ -72,7 +72,6 @@ async function initializePlatforms() {
     console.log('Локальные платформы:', localPlatforms.map((p) => p.name));
     console.log('Облачные платформы:', cloudPlatforms.map((p) => p.name));
 }
-
 async function fetchCloudPlatforms() {
     try {
         const response = await axios.get(CLOUD_URL, {
@@ -110,8 +109,22 @@ async function fetchCloudPlatforms() {
         return [];
     }
 }
+// Функция загрузки локальных платформ
+function loadLocalPlatforms() {
+    const platformsDir = path.join(__dirname, '../platforms');
+    const platforms = [];
+    const files = fs.readdirSync(platformsDir);
 
+    files.forEach((file) => {
+        const platformPath = path.join(platformsDir, file);
+        if (path.extname(file) === '.js') {
+            const platform = require(platformPath);
+            platforms.push(platform);
+        }
+    });
 
+    return platforms;
+}
 // Загрузка звуков из папки /sounds
 function loadSounds() {
     const soundDirectory = path.join(__dirname, '../../assets/sounds');
@@ -152,24 +165,6 @@ ipcMain.on('play-last-sound', (event) => {
     }
 });
 
-// Функция загрузки локальных платформ
-function loadLocalPlatforms() {
-    const platformsDir = path.join(__dirname, '../platforms');
-    const platforms = [];
-    const files = fs.readdirSync(platformsDir);
-
-    files.forEach((file) => {
-        const platformPath = path.join(platformsDir, file);
-        if (path.extname(file) === '.js') {
-            const platform = require(platformPath);
-            platforms.push(platform);
-        }
-    });
-
-    return platforms;
-}
-
-
 
  // Отправляем сообщение в рендер, чтобы оно отобразилось в интерфейсе
 ipcMain.on('log-message', (event, message) => {
@@ -190,26 +185,9 @@ ipcMain.on('toggle-cloud', (event, enabled) => {
     event.reply('platforms-list', platforms.map((platform) => platform.name));
 });
 
-// Обработчик переключения чекбокса
-// ipcMain.on('toggle-gif', (event, enabled) => {
-//     useGif = enabled;
-//     console.log(`Использование гифок прошивок: ${useGif}`);
-// });
-
-
-
-
-
-
-
-ipcMain.on('log-message', (event, message) => {
-    // Отправляем сообщение в рендер, чтобы оно отобразилось в интерфейсе
-    win.webContents.send('log-message', message);
-});
 
 ipcMain.on('toggle-always-on-top', (event, enable) => {
     win.setAlwaysOnTop(enable);
-    //event.reply('always-on-top-updated', enable);
 });
 
 ipcMain.on('register-platform-window', (event) => {
@@ -260,7 +238,6 @@ ipcMain.on('open-modal', (event) => {
 });
 
 
-
 ipcMain.on('apply-gif-settings', (event, settings) => {
     platformSettings = settings;
     console.log('Настройки GIF обновлены:', platformSettings);
@@ -277,9 +254,7 @@ ipcMain.on('process-platform', async (event, { platformName, paths }) => {
 
     const platform = currentPlatforms.find((p) => p.name === platformName);
     if (platform) {
-        //platformWindow.webContents.send('open-modal');
         let userLink = null;
-
 
         console.log("Передаем пути:" + paths)
         await platform.process(paths, userLink, platformWindow, platformSettings);
