@@ -55,7 +55,7 @@
                 <button class="glow-on-hover glow-on-hover-dev" id="minify-button">Минимизировать </br> выделенные файлы
                     .js</button>
                 <button class="glow-on-hover glow-on-hover-dev" id="replace-images-button">Картинки в Base64</button>
-
+                <button class="glow-on-hover glow-on-hover-dev" id="resize-images">Ресайз спрайткарты</button>
 
                 <button class="glow-on-hover glow-on-hover-dev" id="image-button">Сделать картинки</button>
             </div>
@@ -89,25 +89,21 @@
         const container = document.getElementById('container');
         //const container_2 = document.getElementById('container_2');
 
-        // window.onresize = function () {
-        //     changeConatiner();
-        // }
-        // function changeConatiner() {
-        //     const nowW = window.innerWidth;
+        window.onresize = function () {
+            changeConatiner();
+        }
+        function changeConatiner() {
+            const nowW = window.innerWidth;
 
-        //     if (nowW < 300) {
-        //         container.style.display = "none";
-        //         container_2.style.display = "block";
-        //         window.electron.toggleAlwaysOnTop(true);
-        //     } else {
-        //         container.style.display = "block";
-        //         container_2.style.display = "none";
-        //         window.electron.toggleAlwaysOnTop(false);
-        //     }
-        //     console.log(nowW);
-        // }
+            if (nowW < 300) {
+                window.electron.toggleAlwaysOnTop(true);
+            } else {
+                window.electron.toggleAlwaysOnTop(false);
+            }
+            console.log(nowW);
+        }
 
-        // changeConatiner();
+        changeConatiner();
 
 
 
@@ -215,6 +211,7 @@
         dragAndDropBtn('archive-button');
         //dragAndDropBtn('archive-button_min', 'archive-button');
         dragAndDropBtn('compress-button');
+        dragAndDropBtn('resize-images');
        // dragAndDropBtn('compress-button_min', 'compress-button');
         dragAndDropBtn('image-button');
         dragAndDropBtn('default_archive-button');

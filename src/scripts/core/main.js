@@ -27,7 +27,7 @@ let platformWindow = null;
 
 function createWindow() {
 
-        win = new BrowserWindow({
+    win = new BrowserWindow({
         width: 900,
         height: 600,
         webPreferences: {
@@ -36,7 +36,7 @@ function createWindow() {
             contextIsolation: true,
             enableRemoteModule: true
         },
-        
+
     });
 
     win.loadFile('./src/scripts/core/index.html');
@@ -44,7 +44,7 @@ function createWindow() {
 }
 
 app.on('ready', async () => {
-    loadSounds();   
+    loadSounds();
     await initializePlatforms();
     createWindow();
 });
@@ -166,9 +166,9 @@ ipcMain.on('play-last-sound', (event) => {
 });
 
 
- // Отправляем сообщение в рендер, чтобы оно отобразилось в интерфейсе
+// Отправляем сообщение в рендер, чтобы оно отобразилось в интерфейсе
 ipcMain.on('log-message', (event, message) => {
-   
+
     win.webContents.send('log-message', message);
 });
 // Обработчик для запроса платформ
@@ -307,6 +307,66 @@ ipcMain.on('archive-button', async (event, paths) => {
     });
 });
 
+// ipcMain.on('default_archive-button', async (event, paths) => {
+//     if (!paths || paths.length === 0) {
+//         event.reply('archive-response', 'Не выбраны файлы или папки для архивации.');
+//         return;
+//     }
+
+//     // Определяем имя ZIP-архива
+//     let archiveName;
+//     if (paths.length === 1 && fs.statSync(paths[0]).isDirectory()) {
+//         // Если выбрана одна папка
+//         archiveName = `${path.basename(paths[0])}.zip`;
+//     } else {
+//         // Если выбраны файлы или несколько элементов
+//         const parentFolder = path.dirname(paths[0]); // Папка первого элемента
+//         const folderName = path.basename(parentFolder);
+//         archiveName = `${folderName}.zip`;
+//     }
+
+//     const outputZipPath = path.join(path.dirname(paths[0]), archiveName);
+
+//     // Создаем поток записи для архива
+//     const output = fs.createWriteStream(outputZipPath);
+//     const archive = archiver('zip', {
+//         zlib: { level: 9 } // Уровень сжатия
+//     });
+
+//     output.on('close', () => {
+//         event.reply(
+//             'archive-response',
+//             `Архивирование завершено успешно. Архив создан: ${archiveName}`
+//         );
+//         logCompressionToSheet(paths.length, "Архивация");
+//     });
+
+//     archive.on('error', (err) => {
+//         console.error(`Ошибка архивации: ${err.message}`);
+//         event.reply('archive-response', `Ошибка архивации: ${err.message}`);
+//     });
+
+//     archive.pipe(output);
+
+//     // Добавляем выбранные файлы и папки в архив
+//     for (const itemPath of paths) {
+//         const itemName = path.basename(itemPath);
+
+//         if (fs.statSync(itemPath).isDirectory()) {
+//             // Если это папка, добавляем её содержимое
+//             archive.glob('**/*', {
+//                 cwd: itemPath,
+
+//             });
+//         } else {
+//             // Если это файл, добавляем его в архив
+//             archive.file(itemPath, { name: itemName });
+//         }
+//     }
+
+//     await archive.finalize();
+// });
+
 ipcMain.on('default_archive-button', async (event, paths) => {
     if (!paths || paths.length === 0) {
         event.reply('archive-response', 'Не выбраны файлы или папки для архивации.');
@@ -353,11 +413,8 @@ ipcMain.on('default_archive-button', async (event, paths) => {
         const itemName = path.basename(itemPath);
 
         if (fs.statSync(itemPath).isDirectory()) {
-            // Если это папка, добавляем её содержимое
-            archive.glob('**/*', {
-                cwd: itemPath,
-                
-            });
+            // Если это папка, добавляем её как отдельную папку в архив
+            archive.directory(itemPath, itemName);
         } else {
             // Если это файл, добавляем его в архив
             archive.file(itemPath, { name: itemName });
@@ -415,74 +472,74 @@ ipcMain.on('image-button', async (event, paths) => {
 async function createScreenshotWithTrigger(paths) {
 
     for (const folderPath of paths) {
-    const releasePath = await prepareReleaseFolder(folderPath, 'gifs');
-    const htmlPath = path.join(releasePath, 'index.html');
-    const outputDir = path.join(releasePath, 'img');
+        const releasePath = await prepareReleaseFolder(folderPath, 'gifs');
+        const htmlPath = path.join(releasePath, 'index.html');
+        const outputDir = path.join(releasePath, 'img');
 
-    // Проверяем наличие index.html
-    if (!fs.existsSync(htmlPath)) {
-        throw new Error(`Файл index.html не найден по пути: ${htmlPath}`);
-    }
-
-    // Создаём папку для скриншотов, если её нет
-    if (!fs.existsSync(outputDir)) {
-        fs.mkdirSync(outputDir, { recursive: true });
-    }
-
-    let screenshotCounter = 1; // Счётчик для названий файлов
-    let stopTriggerReceived = false; // Флаг для остановки
-
-    // Открываем браузер Puppeteer
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-
-    // Загружаем index.html
-    await page.goto(`file://${htmlPath}`);
-
-    // Устанавливаем обработчик для скриншотов
-    await page.exposeFunction('triggerScreenshot', async () => {
-        if (stopTriggerReceived) return;
-
-        const canvasElement = await page.$('canvas#canvas');
-        if (!canvasElement) {
-            console.error('<canvas> с id="canvas" не найден!');
-            return;
+        // Проверяем наличие index.html
+        if (!fs.existsSync(htmlPath)) {
+            throw new Error(`Файл index.html не найден по пути: ${htmlPath}`);
         }
 
-        const outputPath = path.join(outputDir, `screenshot_${screenshotCounter}.png`);
-        await canvasElement.screenshot({ path: outputPath });
-        console.log(`Скриншот ${screenshotCounter} сохранён в ${outputPath}`);
-        screenshotCounter++;
-    });
+        // Создаём папку для скриншотов, если её нет
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+        }
 
-    // Устанавливаем обработчик для остановки
-    await page.exposeFunction('triggerScreenshotStop', async () => {
-        console.log('Получен сигнал остановки.');
-        stopTriggerReceived = true;
-        await browser.close(); // Закрываем браузер
-        await generateGif(releasePath);
-        deleteAllExceptImg(releasePath);
-        
-    });
+        let screenshotCounter = 1; // Счётчик для названий файлов
+        let stopTriggerReceived = false; // Флаг для остановки
 
-    // Добавляем обработчик для консольных триггеров
-    await page.evaluate(() => {
-        const originalConsoleLog = console.debug;
-        console.debug = (...args) => {
-            originalConsoleLog(...args);
+        // Открываем браузер Puppeteer
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
 
-            if (args.includes('gif')) {
-                window.triggerScreenshot();
-            } else if (args.includes('gif-stop')) {
-                window.triggerScreenshotStop();
-                
+        // Загружаем index.html
+        await page.goto(`file://${htmlPath}`);
+
+        // Устанавливаем обработчик для скриншотов
+        await page.exposeFunction('triggerScreenshot', async () => {
+            if (stopTriggerReceived) return;
+
+            const canvasElement = await page.$('canvas#canvas');
+            if (!canvasElement) {
+                console.error('<canvas> с id="canvas" не найден!');
+                return;
             }
-        };
-    });
 
-    console.log('Ожидание триггеров для создания скриншотов...');
+            const outputPath = path.join(outputDir, `screenshot_${screenshotCounter}.png`);
+            await canvasElement.screenshot({ path: outputPath });
+            console.log(`Скриншот ${screenshotCounter} сохранён в ${outputPath}`);
+            screenshotCounter++;
+        });
+
+        // Устанавливаем обработчик для остановки
+        await page.exposeFunction('triggerScreenshotStop', async () => {
+            console.log('Получен сигнал остановки.');
+            stopTriggerReceived = true;
+            await browser.close(); // Закрываем браузер
+            await generateGif(releasePath);
+            deleteAllExceptImg(releasePath);
+
+        });
+
+        // Добавляем обработчик для консольных триггеров
+        await page.evaluate(() => {
+            const originalConsoleLog = console.debug;
+            console.debug = (...args) => {
+                originalConsoleLog(...args);
+
+                if (args.includes('gif')) {
+                    window.triggerScreenshot();
+                } else if (args.includes('gif-stop')) {
+                    window.triggerScreenshotStop();
+
+                }
+            };
+        });
+
+        console.log('Ожидание триггеров для создания скриншотов...');
     }
-    
+
 }
 
 async function prepareReleaseFolder(folderPath, name = 'release') {
@@ -632,3 +689,146 @@ function getFilePathsByExtensions(folderPath, extensions) {
 
 
 
+
+
+
+
+ipcMain.on('resize-images', async (event, paths) => {
+    if (!paths || paths.length === 0) {
+        //event.reply('compress-response', 'Не выбраны папки для сжатия фото.');
+        console.log("Не выбраны папки для генерации СПРАЙТКАРТЫ");
+        return;
+    }
+
+   // await cropImage('/Users/deniszablincev/Documents/2024/Backup/Adobe_Projects/Animate/_SHABLON/Sripts/test/archive/image_qualitu/index_atlas_NP_1.jpg',0,0,100,150,'/Users/deniszablincev/Documents/2024/Backup/Adobe_Projects/Animate/_SHABLON/Sripts/test/archive/out');
+    await optimizeSprites(paths);
+
+});
+
+
+async function optimizeSprites(paths) {
+
+    for (const folderPath of paths) {
+        const releasePath = await prepareReleaseFolder(folderPath, 'resize');
+        const jsPath = path.join(releasePath, 'index.js');
+
+        if (!fs.existsSync(jsPath)) {
+            throw new Error(`Файл index.js не найден в папке: ${releasePath}`);
+        }
+
+        const jsContent = fs.readFileSync(jsPath, 'utf8');
+
+        const framesRegex = /{name:"(.*?)", frames: (\[\[.*?\]\])}/;
+        const match = jsContent.match(framesRegex);
+
+        if (!match) {
+            throw new Error('Строка с frames не найдена в index.js');
+        }
+
+        const imageName = match[1];
+        const frames = JSON.parse(match[2]);
+
+        console.log(`Обнаружено изображение: ${imageName}`);
+        console.log(`Координаты:`, frames);
+
+        const imagePath = path.join(releasePath, `${imageName}.jpg`);
+
+        if (!fs.existsSync(imagePath)) {
+            throw new Error(`Изображение ${imageName}.jpg не найдено`);
+        }
+
+        const originalImage = await Jimp.read(imagePath);
+
+        // Создаем временную папку temp
+        const tempFolderPath = path.join(releasePath, 'temp');
+        if (!fs.existsSync(tempFolderPath)) {
+            fs.mkdirSync(tempFolderPath, { recursive: true });
+            console.log(`Временная папка создана: ${tempFolderPath}`);
+        }
+
+        const optimizedFrames = [];
+        const optimizedFrames2 = [];
+        for (const [x, y, width, height] of frames) {
+            console.log(`Координаты: ${x} ${y} ${width} ${height} originalImage: ${originalImage}`);
+            // Убедитесь, что координаты передаются корректно
+            const croppedImage = originalImage.clone().crop({ x: x, y: y, w: width, h: height });
+
+            croppedImage.resize({w: width / 2, h: height / 2 });
+            
+
+            const outputFilePath = path.join(tempFolderPath, `${x}_${y}.png`);
+            await croppedImage.write(outputFilePath);
+
+            optimizedFrames.push([
+                Number(x),
+                Number(y),
+                Number(width) / 2,
+                Number(height) / 2,
+            ]);
+
+            optimizedFrames2.push([
+                optimizedFrames2.length === 0 ? 0 : optimizedFrames[optimizedFrames.length - 1][0] + Number(width) / 2,
+                0,
+                Number(width) / 2,
+                Number(height) / 2,
+            ]);
+        }
+
+        const spriteWidth = optimizedFrames.reduce((acc, frame) => {
+            if (!Array.isArray(frame) || frame.length < 4) {
+                throw new Error(`Некорректный формат фрейма: ${JSON.stringify(frame)}`);
+            }
+            const [, , width] = frame;
+            return acc + Number(width);
+        }, 0);
+        
+        const spriteHeight = Math.max(...optimizedFrames.map(frame => {
+            if (!Array.isArray(frame) || frame.length < 4) {
+                throw new Error(`Некорректный формат фрейма: ${JSON.stringify(frame)}`);
+            }
+            const [, , , height] = frame;
+            return Number(height);
+        }));
+        
+        console.log(`Ширина спрайта: ${spriteWidth}, Высота спрайта: ${spriteHeight}`);
+        const spriteSheet = new Jimp({width: spriteWidth, height: spriteHeight});
+
+        let currentX = 0;
+        for (const [x, y, width, height] of optimizedFrames) {
+            const croppedImagePath = path.join(tempFolderPath, `${x}_${y}.png`);
+            console.log(`Ищееееем ${optimizedFrames}`);
+            console.log(`Ищееееем ${croppedImagePath}`);
+            const croppedImage = await Jimp.read(croppedImagePath);
+            spriteSheet.composite(croppedImage, currentX, 0);
+            currentX += Number(width);
+        }
+
+        const newSpriteSheetPath = path.join(releasePath, `${imageName}_optimized.png`);
+        await spriteSheet.write(newSpriteSheetPath);
+
+        const newFramesString = JSON.stringify(optimizedFrames2);
+        const updatedJsContent = jsContent.replace(framesRegex, `{name:"${imageName}", frames: ${newFramesString}}`);
+        fs.writeFileSync(jsPath, updatedJsContent, 'utf8');
+
+    }
+
+}
+
+
+
+async function cropImage(imagePath, x, y, width, height, outputPath) {
+    try {
+        // Загружаем изображение
+        const image = await Jimp.read(imagePath);
+        console.log(`Coord ${x}, ${y}, ${width}, ${height},`);
+        // Выполняем обрезку
+        const croppedImage = image.crop({ x: x, y: y, w: width, h: height });
+
+        // Сохраняем обрезанное изображение
+        await croppedImage.writeAsync(outputPath);
+
+        console.log(`Обрезанное изображение сохранено в: ${outputPath}`);
+    } catch (error) {
+        console.error('Ошибка при обрезке изображения:', error.message);
+    }
+}
