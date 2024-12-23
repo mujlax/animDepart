@@ -6,6 +6,7 @@ const axios = require('axios'); // Для загрузки файлов
 const vm = require('vm'); // Для безопасного выполнения скриптов
 const tinify = require('tinify');
 const puppeteer = require('puppeteer');
+const { minify } = require('terser');
 
 const GIFEncoder = require('gifencoder');
 const { Jimp } = require('jimp');
@@ -221,6 +222,7 @@ ipcMain.on('run-minify', async (event) => {
         event.reply('minify-response', response);
     });
 });
+
 
 ipcMain.on('replace-images-base64', (event) => {
     platformAPI.replaceImagesWithBase64((response) => {
@@ -467,6 +469,10 @@ ipcMain.on('image-button', async (event, paths) => {
     createScreenshotWithTrigger(paths);
 
 
+});
+
+ipcMain.on('minify-button', async (event, paths) => {
+    minifyJavaScript(paths);
 });
 
 async function createScreenshotWithTrigger(paths) {
@@ -830,5 +836,60 @@ async function cropImage(imagePath, x, y, width, height, outputPath) {
         console.log(`Обрезанное изображение сохранено в: ${outputPath}`);
     } catch (error) {
         console.error('Ошибка при обрезке изображения:', error.message);
+    }
+}
+
+
+
+/**
+ * Минифицирует JavaScript файлы из папок или отдельные файлы
+ * @param {string[]} paths - Пути к папкам или JS файлам
+ */
+async function minifyJavaScript(paths) {
+    for (const inputPath of paths) {
+        try {
+            const stat = fs.statSync(inputPath);
+
+            if (stat.isDirectory()) {
+                // Если это папка, ищем все файлы .js
+                const jsFiles = fs.readdirSync(inputPath)
+                    .filter(file => path.extname(file) === '.js')
+                    .map(file => path.join(inputPath, file));
+
+                for (const jsFile of jsFiles) {
+                    await minifyFile(jsFile);
+                }
+            } else if (stat.isFile() && path.extname(inputPath) === '.js') {
+                // Если это JS-файл
+                await minifyFile(inputPath);
+            } else {
+                console.warn(`Пропущен некорректный путь: ${inputPath}`);
+            }
+        } catch (err) {
+            console.error(`Ошибка обработки пути ${inputPath}:`, err.message);
+        }
+    }
+}
+
+/**
+ * Минифицирует один JavaScript файл
+ * @param {string} filePath - Путь к JavaScript файлу
+ */
+async function minifyFile(filePath) {
+    try {
+        console.log(`Минификация файла: ${filePath}`);
+
+        const code = fs.readFileSync(filePath, 'utf8');
+        const result = await minify(code);
+
+        if (result.error) {
+            throw new Error(`Ошибка минификации: ${result.error}`);
+        }
+
+        const minifiedPath = filePath.replace(/\.js$/, '.min.js');
+        fs.writeFileSync(minifiedPath, result.code, 'utf8');
+        console.log(`Минифицированный файл сохранён: ${minifiedPath}`);
+    } catch (err) {
+        console.error(`Ошибка при минификации файла ${filePath}:`, err.message);
     }
 }

@@ -22,24 +22,28 @@
     <div class="container" id="container">
         <div class="header">
             <!-- <button href="./platform.html"><a href="./platform.html">Прошить</a></button> -->
-            <h1>Animation Department Scripts <span class="txtVersion" style="color: lightgray;">ver 0.7.2</span></h1>
+            <h1>Animation Department Scripts <span class="txtVersion" style="color: lightgray;">ver 0.7.8</span></h1>
         </div>
         <div class="section-1">
-            <h2>Работа с папками</h2>
+            <h2 class="section-header">Работа с папками</h2>
               <div class="buttons">
                 <button
-                    title="Архивация с удалением .fla и .DS_store (Винда: перетащить папки. Мак: можно выбирать в finder)"
+                    title="Архивация с удалением .fla и .DS_store (Винда: перетащить папки. Мак: можно выбирать папки в finder и перетаскивать)"
                     class="glow-on-hover" id="archive-button">
                     <i class="fa-solid fa-file-zipper fa-xl"></i> <span>Архивировать </br>выделенные папки</span>
                 </button>
-                <button title="Сжатие картинок (Винда: перетащить папки. Мак: можно выбирать в finder)"
+                <button title="Сжатие картинок (Винда: перетащить папки. Мак: можно выбирать папки/файлы в finder и перетаскивать)"
                     class="glow-on-hover btn-compress" id="compress-button">
                     <i class="fa-solid fa-file-image fa-xl"></i><span>Сжать картинки </br>через TinyPNG</span>
                     <p style="" id="countMonths">0/500</p>
                 </button>
-                <button title="Обычная архивация без удаления файлов (Винда: скоро. Мак: можно)" class="glow-on-hover"
+                <button title="Обычная архивация без удаления файлов (Винда/Мак: перетаскивание файлов/папок.)" class="glow-on-hover"
                     id="default_archive-button"><i class="fa-solid fa-box-archive fa-xl"></i><span>Архивация </br>для
-                        Дани</span></button>
+                        Дани</span>
+                </button>
+                <button title="Сжатие JS (Винда/Мак: перетаскивание файлов/папок.)"
+                        class="glow-on-hover" id="minify-button"><i class="fa-brands fa-square-js fa-xl"></i><span>Мини .js</span>
+                </button>
             </div>
 
         </div>
@@ -52,8 +56,7 @@
                 <a href="./platform.html"><button class="glow-on-hover glow-on-hover-dev"
                         id="proshivka">Прошивка</button></a>
                 <!-- <button class="glow-on-hover glow-on-hover-dev" id="stats-button">Показать общую статистику</button> -->
-                <button class="glow-on-hover glow-on-hover-dev" id="minify-button">Минимизировать </br> выделенные файлы
-                    .js</button>
+                
                 <button class="glow-on-hover glow-on-hover-dev" id="replace-images-button">Картинки в Base64</button>
                 <button class="glow-on-hover glow-on-hover-dev" id="resize-images">Ресайз спрайткарты</button>
 
@@ -209,55 +212,18 @@
         }
 
         dragAndDropBtn('archive-button');
-        //dragAndDropBtn('archive-button_min', 'archive-button');
         dragAndDropBtn('compress-button');
         dragAndDropBtn('resize-images');
-       // dragAndDropBtn('compress-button_min', 'compress-button');
         dragAndDropBtn('image-button');
         dragAndDropBtn('default_archive-button');
-       // dragAndDropBtn('default_archive-button_min', 'default_archive-button');
+        dragAndDropBtn('minify-button');
+        
 
-
-        // // Подсветка при наведении
-        // archiveButton.addEventListener('dragover', (event) => {
-        //     event.preventDefault();
-        //     archiveButton.classList.add('drag-over');
-        // });
-
-        // archiveButton.addEventListener('dragleave', () => {
-        //     archiveButton.classList.remove('drag-over');
-        // });
-
-        // // Обработка перетаскивания
-        // archiveButton.addEventListener('drop', async (e) => {
-        //     e.preventDefault();
-        //     archiveButton.classList.remove('drag-over');
-
-        //     const items = [...e.dataTransfer.items];
-        //     const paths = [];
-
-        //     // Асинхронно получаем пути с использованием webUtils
-        //     for (const item of items) {
-        //         const file = item.getAsFile();
-        //         if (file) {
-        //             const filePath = await window.electron.getFilePath(file); // Получаем путь через webUtils
-        //             if (filePath) {
-        //                 paths.push(filePath);
-        //             }
-        //         }
-        //     }
-
-        //     window.electron.send('archive-drag-drop', paths);
-        // });
 
         // Обработчик для кнопки архивирования
         document.getElementById('archive-button').addEventListener('click', () => {
             window.electron.send('run-archive');
         });
-
-        // document.getElementById('archive-button_min').addEventListener('click', () => {
-        //     window.electron.send('run-archive');
-        // });
 
         window.electron.on('archive-response', (response) => {
             document.getElementById('output').textContent = response;
@@ -277,9 +243,6 @@
         document.getElementById('compress-button').addEventListener('click', () => {
             window.electron.send('run-compress');
         });
-        // document.getElementById('compress-button_min').addEventListener('click', () => {
-        //     window.electron.send('run-compress');
-        // });
 
         window.electron.on('compress-response', (response) => {
             document.getElementById('output').textContent = response[0];

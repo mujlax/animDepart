@@ -21,6 +21,15 @@ a {
     font-style: normal;
   }
   
+html {
+    
+    /* background-color: #1c1c1c; */
+}
+
+body {
+    /* filter: invert(100%); */
+}
+
 h1 {
     font-family: "Days One", sans-serif;
     font-weight: 400;
@@ -278,4 +287,27 @@ pre {
     .section-2 {
         display: none;
     }
+
+    .header {
+        display: none;
+    }
+
+    #output {
+        display: none;
+    }
+
+    .section-header {
+        display: none;
+    }
+
+    .credits {
+        display: none;
+    }
+
+    body {
+        -webkit-filter: invert(100%);
+        filter: invert(100%);
+        background-color: rgb(21, 21, 21);
+    }
+    
 }
