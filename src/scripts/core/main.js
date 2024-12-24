@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, ipcRenderer } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const archiver = require('archiver');
@@ -289,14 +289,16 @@ ipcMain.on('archive-button', async (event, paths) => {
 
         output.on('close', () => {
             archivedCount++;
+            logMessage('success', `Архивиравано: ${getLastTwoDirectories(folderPath)}`, '📁');
             if (archivedCount === paths.length) {
-                //callback(`Архивирование завершено успешно. Архивировано папок: ${archivedCount}`);
+                logMessage('success', `Архивиравно папок: ${archivedCount}`);
                 logCompressionToSheet(archivedCount, "Архивация");
             }
         });
 
         archive.on('error', (err) => {
-            console.error(`Ошибка архивации папки ${folderName}: ${err.message}`);
+            logMessage('error', `Ошибка архивации: ${folderName} Ошибка: ${err.message}`, '📁');
+            //console.error(`Ошибка архивации папки ${folderName}: ${err.message}`);
             //callback(`Ошибка архивации папки ${folderName}`);
         });
 
@@ -371,7 +373,8 @@ ipcMain.on('archive-button', async (event, paths) => {
 
 ipcMain.on('default_archive-button', async (event, paths) => {
     if (!paths || paths.length === 0) {
-        event.reply('archive-response', 'Не выбраны файлы или папки для архивации.');
+        logMessage('error', `Не выбраны файлы или папки для архивации.`, '📁');
+        //event.reply('archive-response', 'Не выбраны файлы или папки для архивации.');
         return;
     }
 
@@ -396,16 +399,18 @@ ipcMain.on('default_archive-button', async (event, paths) => {
     });
 
     output.on('close', () => {
-        event.reply(
-            'archive-response',
-            `Архивирование завершено успешно. Архив создан: ${archiveName}`
-        );
+        // event.reply(
+        //     'archive-response',
+        //     `Архивирование завершено успешно. Архив создан: ${archiveName}`
+        // );
+        logMessage('success', `Архивиравано: ${archiveName}`, '📁');
         logCompressionToSheet(paths.length, "Архивация");
     });
 
     archive.on('error', (err) => {
-        console.error(`Ошибка архивации: ${err.message}`);
-        event.reply('archive-response', `Ошибка архивации: ${err.message}`);
+        //console.error(`Ошибка архивации: ${err.message}`);
+        logMessage('error', `Ошибка архивации: ${folderName} Ошибка: ${err.message}`, '📁');
+       //event.reply('archive-response', `Ошибка архивации: ${err.message}`);
     });
 
     archive.pipe(output);
@@ -428,12 +433,11 @@ ipcMain.on('default_archive-button', async (event, paths) => {
 
 ipcMain.on('compress-button', async (event, paths) => {
     if (!paths || paths.length === 0) {
-        event.reply('compress-response', 'Не выбраны папки для сжатия фото.');
+        logMessage('error', `Не выбраны папки для сжатия фото.`, '🖼️');
+        //event.reply('compress-response', 'Не выбраны папки для сжатия фото.');
         return;
     }
     const response = [];
-    response.push('Все изображения успешно сжаты (наверно пхе)');
-
 
 
     paths.forEach(folderPath => {
@@ -442,10 +446,17 @@ ipcMain.on('compress-button', async (event, paths) => {
         console.log(`imagePaths ${imagePaths}`);
         return Promise.all(
             imagePaths.map(imagePath =>
-                tinify.fromFile(imagePath).toFile(imagePath, () => {
+                tinify.fromFile(imagePath).toFile(imagePath, (compressError) => {
+                    if (compressError) {
+                        logMessage('error', `Ошибка при минификации файла: ${getLastTwoDirectories(imagePath)}`, '🖼️');
+                    }
                     logCompressionToSheet(imagePaths.length, "Сжатие изображения");
-                    response.push(tinify.compressionCount),
-                        event.reply('compress-response', response)
+                    response.push(tinify.compressionCount);
+                    event.reply('compress-response', response);
+
+                    // Логируем успех
+                    logMessage('success', `Картинки успешно сжаты: ${getLastTwoDirectories(imagePath)}`, '🖼️');
+                    
                 })
             ),
 
@@ -706,7 +717,7 @@ ipcMain.on('resize-images', async (event, paths) => {
         return;
     }
 
-   // await cropImage('/Users/deniszablincev/Documents/2024/Backup/Adobe_Projects/Animate/_SHABLON/Sripts/test/archive/image_qualitu/index_atlas_NP_1.jpg',0,0,100,150,'/Users/deniszablincev/Documents/2024/Backup/Adobe_Projects/Animate/_SHABLON/Sripts/test/archive/out');
+    // await cropImage('/Users/deniszablincev/Documents/2024/Backup/Adobe_Projects/Animate/_SHABLON/Sripts/test/archive/image_qualitu/index_atlas_NP_1.jpg',0,0,100,150,'/Users/deniszablincev/Documents/2024/Backup/Adobe_Projects/Animate/_SHABLON/Sripts/test/archive/out');
     await optimizeSprites(paths);
 
 });
@@ -759,8 +770,8 @@ async function optimizeSprites(paths) {
             // Убедитесь, что координаты передаются корректно
             const croppedImage = originalImage.clone().crop({ x: x, y: y, w: width, h: height });
 
-            croppedImage.resize({w: width / 2, h: height / 2 });
-            
+            croppedImage.resize({ w: width / 2, h: height / 2 });
+
 
             const outputFilePath = path.join(tempFolderPath, `${x}_${y}.png`);
             await croppedImage.write(outputFilePath);
@@ -787,7 +798,7 @@ async function optimizeSprites(paths) {
             const [, , width] = frame;
             return acc + Number(width);
         }, 0);
-        
+
         const spriteHeight = Math.max(...optimizedFrames.map(frame => {
             if (!Array.isArray(frame) || frame.length < 4) {
                 throw new Error(`Некорректный формат фрейма: ${JSON.stringify(frame)}`);
@@ -795,9 +806,9 @@ async function optimizeSprites(paths) {
             const [, , , height] = frame;
             return Number(height);
         }));
-        
+
         console.log(`Ширина спрайта: ${spriteWidth}, Высота спрайта: ${spriteHeight}`);
-        const spriteSheet = new Jimp({width: spriteWidth, height: spriteHeight});
+        const spriteSheet = new Jimp({ width: spriteWidth, height: spriteHeight });
 
         let currentX = 0;
         for (const [x, y, width, height] of optimizedFrames) {
@@ -863,10 +874,12 @@ async function minifyJavaScript(paths) {
                 // Если это JS-файл
                 await minifyFile(inputPath);
             } else {
-                console.warn(`Пропущен некорректный путь: ${inputPath}`);
+                logMessage('error', `Пропущен некорректный путь: ${getLastTwoDirectories(inputPath)}`, '#️⃣');
+                //console.warn(`Пропущен некорректный путь: ${inputPath}`);
             }
         } catch (err) {
-            console.error(`Ошибка обработки пути ${inputPath}:`, err.message);
+            logMessage('error', `Ошибка обработки пути ${getLastTwoDirectories(inputPath)}: err.message`, '#️⃣');
+            //console.error(`Ошибка обработки пути ${inputPath}:`, err.message);
         }
     }
 }
@@ -888,8 +901,36 @@ async function minifyFile(filePath) {
 
         const minifiedPath = filePath.replace(/\.js$/, '.min.js');
         fs.writeFileSync(minifiedPath, result.code, 'utf8');
-        console.log(`Минифицированный файл сохранён: ${minifiedPath}`);
+
+        // Логируем успех
+        logMessage('success', `Файл успешно минифицирован: ${getLastTwoDirectories(minifiedPath)}`, '#️⃣');
+
     } catch (err) {
-        console.error(`Ошибка при минификации файла ${filePath}:`, err.message);
+        // Логируем ошибку
+        logMessage('error', `Ошибка при минификации файла: ${getLastTwoDirectories(filePath)} Ошибка: ${err.message}`);
     }
 }
+
+// Универсальная функция логирования
+function logMessage(type, message, emoji = '') {
+    if (win && win.webContents) {
+        win.webContents.send('log-message', { type, message, emoji });
+    } else {
+        console.warn(`[${type.toUpperCase()}]: ${message}`);
+    }
+}
+
+function getLastTwoDirectories(fullPath) {
+    const parts = fullPath.split(path.sep); // Разделяем путь по разделителю (Windows или Unix)
+    return parts.slice(-2).join(path.sep); // Берём последние 3 элемента и соединяем обратно
+}
+
+ipcMain.on('log-message', (event, log) => {
+    if (win && win.webContents) {
+        win.webContents.send('log-message', log);
+    }
+});
+
+module.exports = {
+    logMessage,
+};

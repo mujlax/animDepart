@@ -26,23 +26,25 @@
         </div>
         <div class="section-1">
             <h2 class="section-header">Работа с папками</h2>
-              <div class="buttons">
+            <div class="buttons">
                 <button
                     title="Архивация с удалением .fla и .DS_store (Винда: перетащить папки. Мак: можно выбирать папки в finder и перетаскивать)"
                     class="glow-on-hover" id="archive-button">
                     <i class="fa-solid fa-file-zipper fa-xl"></i> <span>Архивировать </br>выделенные папки</span>
                 </button>
-                <button title="Сжатие картинок (Винда: перетащить папки. Мак: можно выбирать папки/файлы в finder и перетаскивать)"
+                <button
+                    title="Сжатие картинок (Винда: перетащить папки. Мак: можно выбирать папки/файлы в finder и перетаскивать)"
                     class="glow-on-hover btn-compress" id="compress-button">
                     <i class="fa-solid fa-file-image fa-xl"></i><span>Сжать картинки </br>через TinyPNG</span>
                     <p style="" id="countMonths">0/500</p>
                 </button>
-                <button title="Обычная архивация без удаления файлов (Винда/Мак: перетаскивание файлов/папок.)" class="glow-on-hover"
-                    id="default_archive-button"><i class="fa-solid fa-box-archive fa-xl"></i><span>Архивация </br>для
+                <button title="Обычная архивация без удаления файлов (Винда/Мак: перетаскивание файлов/папок.)"
+                    class="glow-on-hover" id="default_archive-button"><i
+                        class="fa-solid fa-box-archive fa-xl"></i><span>Архивация </br>для
                         Дани</span>
                 </button>
-                <button title="Сжатие JS (Винда/Мак: перетаскивание файлов/папок.)"
-                        class="glow-on-hover" id="minify-button"><i class="fa-brands fa-square-js fa-xl"></i><span>Мини .js</span>
+                <button title="Сжатие JS (Винда/Мак: перетаскивание файлов/папок.)" class="glow-on-hover"
+                    id="minify-button"><i class="fa-brands fa-square-js fa-xl"></i><span>Мини .js</span>
                 </button>
             </div>
 
@@ -56,13 +58,13 @@
                 <a href="./platform.html"><button class="glow-on-hover glow-on-hover-dev"
                         id="proshivka">Прошивка</button></a>
                 <!-- <button class="glow-on-hover glow-on-hover-dev" id="stats-button">Показать общую статистику</button> -->
-                
-                <button class="glow-on-hover glow-on-hover-dev" id="replace-images-button">Картинки в Base64</button>
-                <button class="glow-on-hover glow-on-hover-dev" id="resize-images">Ресайз спрайткарты</button>
 
-                <button class="glow-on-hover glow-on-hover-dev" id="image-button">Сделать картинки</button>
+                <button class="glow-on-hover glow-on-hover-dev" id="replace-images-button">Картинки в Base64</button>
+                <!-- <button class="glow-on-hover glow-on-hover-dev" id="resize-images">Ресайз спрайткарты</button> -->
+
+                <!-- <button class="glow-on-hover glow-on-hover-dev" id="image-button">Сделать картинки</button> -->
             </div>
-            <form id="gif-settings">
+            <!-- <form id="gif-settings">
                 <label for="repeat">Цикличность GIF:</label>
                 <select id="repeat" name="repeat">
                     <option value="0" selected>Зациклен</option>
@@ -73,10 +75,15 @@
                 <input type="number" id="quality" name="quality" min="1" max="10" value="10">
 
                 <button type="button" id="apply-settings">Применить настройки</button>
-            </form>
+            </form> -->
+
+            
         </div>
 
         <pre id="output"></pre>
+        <p class="log_title" style="margin-top: 20px;"></p>
+            Выводы работы:
+            <div id="log" style="display: flex; flex-direction: column-reverse;"></div>
 
 
     </div>
@@ -213,11 +220,11 @@
 
         dragAndDropBtn('archive-button');
         dragAndDropBtn('compress-button');
-        dragAndDropBtn('resize-images');
-        dragAndDropBtn('image-button');
+        //dragAndDropBtn('resize-images');
+        //dragAndDropBtn('image-button');
         dragAndDropBtn('default_archive-button');
         dragAndDropBtn('minify-button');
-        
+
 
 
         // Обработчик для кнопки архивирования
@@ -245,9 +252,9 @@
         });
 
         window.electron.on('compress-response', (response) => {
-            document.getElementById('output').textContent = response[0];
+            //document.getElementById('output').textContent = response[0];
             // Обновляем счётчик сжатий (предполагаем, что он возвращается)
-            document.getElementById('countMonths').textContent = response[1] + "/500 сжатий";
+            document.getElementById('countMonths').textContent = response[0] + "/500 сжатий";
         });
 
         // Обработчик для кнопки минимизации JS
@@ -267,13 +274,46 @@
             document.getElementById('output').textContent = response;
         });
 
-        document.getElementById('apply-settings').addEventListener('click', () => {
-            const repeat = parseInt(document.getElementById('repeat').value, 10);
-            const quality = parseInt(document.getElementById('quality').value, 10);
+        // document.getElementById('apply-settings').addEventListener('click', () => {
+        //     const repeat = parseInt(document.getElementById('repeat').value, 10);
+        //     const quality = parseInt(document.getElementById('quality').value, 10);
 
-            window.electron.applyGifSettings({ repeat, quality });
-            console.log('Настройки GIF отправлены:', { repeat, quality });
+        //     window.electron.applyGifSettings({ repeat, quality });
+        //     console.log('Настройки GIF отправлены:', { repeat, quality });
+        // });
+
+        // Слушаем сообщения из main.js
+        window.logger?.onLogMessage((log) => {
+            const logDiv = document.getElementById('log');
+
+            const logMessage = document.createElement('div');
+            logMessage.classList.add(log.type === 'success' ? 'log-success' : 'log-error');
+
+            // Иконка статуса (✅ или ❌)
+            const icon = document.createElement('span');
+            icon.classList.add('log-icon');
+            icon.innerHTML = log.type === 'success' ? ' ✅' : ' ❌';
+
+            // Эмодзи (если есть)
+            const emoji = document.createElement('span');
+            emoji.classList.add('log-emoji');
+            emoji.textContent = log.emoji || '';
+
+            // Текст сообщения
+            const text = document.createElement('span');
+            text.classList.add('log-text');
+            text.textContent = log.message;
+
+            logMessage.appendChild(emoji);
+            logMessage.appendChild(icon);
+
+            logMessage.appendChild(text);
+
+            logDiv.appendChild(logMessage);
+            logDiv.scrollTop = logDiv.scrollHeight;
         });
+
+
 
     </script>
 </body>

@@ -40,10 +40,10 @@ function archiveSelectedItems(callback) {
 
         // Парсим количество архивированных папок из stdout
         const archivedFoldersCount = parseInt(stdout.trim(), 10) || 0;
-        
+
         // Логируем результат в Google Sheets
         logCompressionToSheet(archivedFoldersCount, "Архивация");
-        
+
         callback(`Архивирование завершено успешно. Архивировано папок: ${archivedFoldersCount}`);
     });
 }
@@ -114,7 +114,7 @@ function searchInFiles(searchString, callback) {
         });
     });
 
-    
+
 }
 
 /**
@@ -155,21 +155,21 @@ function compressImages(callback) {
             return;
         }
         const getImagesFromFolder = (folderPath) => {
-                    let images = [];
-                    const items = fs.readdirSync(folderPath);
-                    items.forEach((item) => {
-                        const itemPath = path.join(folderPath, item);
-                        const stats = fs.statSync(itemPath);
-                        if (stats.isDirectory()) {
-                            // Рекурсивно обходим вложенные папки
-                            images = images.concat(getImagesFromFolder(itemPath));
-                        } else if (stats.isFile() && /\.(jpe?g|png|gif)$/i.test(item)) {
-                            // Проверяем, является ли файл изображением (JPEG, PNG, GIF)
-                            images.push(itemPath);
-                        }
-                    });
-                    return images;
-                };
+            let images = [];
+            const items = fs.readdirSync(folderPath);
+            items.forEach((item) => {
+                const itemPath = path.join(folderPath, item);
+                const stats = fs.statSync(itemPath);
+                if (stats.isDirectory()) {
+                    // Рекурсивно обходим вложенные папки
+                    images = images.concat(getImagesFromFolder(itemPath));
+                } else if (stats.isFile() && /\.(jpe?g|png|gif)$/i.test(item)) {
+                    // Проверяем, является ли файл изображением (JPEG, PNG, GIF)
+                    images.push(itemPath);
+                }
+            });
+            return images;
+        };
 
         let imagePaths = [];
         selectedPaths.forEach((filePath) => {
@@ -189,7 +189,7 @@ function compressImages(callback) {
         let compressedCount = 0;
         const errors = [];
         const res = [];
-        
+
         imagePaths.forEach((imagePath) => {
             const outputPath = imagePath.replace(/(\.\w+)$/, '$1');
             console.log("path " + imagePath);
@@ -205,7 +205,7 @@ function compressImages(callback) {
                     logCompressionToSheet(compressedCount, "Сжатие изображения");
                 }
             });
-            
+
         });
     });
 }
@@ -277,7 +277,7 @@ function minifyJSFiles(callback) {
             logCompressionToSheet(minifiedFiles.length, "Минификация");
             callback(`Минификация завершена успешно. Минифицированные файлы:\r\n ${minifiedFiles.join(', \r\n')}`);
         }
-    
+
     });
 }
 

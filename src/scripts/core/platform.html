@@ -56,6 +56,27 @@
             flex-direction: row;
             gap: 20px;
         }
+
+        #log {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            font-family: Arial, sans-serif;
+            border-radius: 10px;
+        }
+
+        .log-success {
+            color: green;
+        }
+
+        .log-error {
+            color: red;
+        }
+
+        .log-icon {
+            margin-right: 5px;
+        }
     </style>
 </head>
 
@@ -76,7 +97,7 @@
         <h1>Прошивка баннеров под площадки</h1>
         <div class="platform-select">
             <label>
-                <input type="checkbox" id="cloud" />
+                <input checked type="checkbox" id="cloud" />
                 Использовать прошивки из облака
             </label>
             <label>
@@ -111,9 +132,14 @@
             </form>
         </div>
 
-        <div class="output" id="output">
+        <div style="display: none;" class="output" id="output">
             Вывод работы будет здесь.
+
         </div>
+        <p class="log_title" style="margin-top: 20px;"></p>
+            Выводы работы:
+        <div id="log" style="display: flex; flex-direction: column-reverse;"></div>
+
 
 
     </div>
@@ -182,6 +208,8 @@
         dropZone.addEventListener('drop', async (e) => {
             e.preventDefault();
             dropZone.classList.remove('dragover');
+            const log = document.getElementById('log');
+            log.innerHTML = '';
 
             const items = [...e.dataTransfer.items];
             const paths = [];
@@ -221,20 +249,7 @@
         });
 
 
-        // Когда приложение готово, добавляем слушатель для логов
-        window.electron.onLogMessage((message) => {
-            const logDiv = document.getElementById('log');
-            if (!logDiv) {
-                const newLogDiv = document.createElement('div');
-                newLogDiv.id = 'log';
-                document.body.appendChild(newLogDiv);
-            }
 
-            // Добавляем сообщение в лог
-            const logMessage = document.createElement('p');
-            logMessage.textContent = message;
-            document.getElementById('log').appendChild(logMessage);
-        });
 
         // Слушаем ответ от основного процесса
         window.electron.on('platform-process-response', (message) => {
@@ -299,6 +314,40 @@
 
             window.electron.applyGifSettings({ repeat, quality, useGif, width });
             console.log('Настройки GIF отправлены:', { repeat, quality, useGif, width });
+        });
+
+
+
+
+
+        // Слушаем сообщения из main.js
+        window.logger?.onLogMessage((log) => {
+            const logDiv = document.getElementById('log');
+
+            const logMessage = document.createElement('div');
+            logMessage.classList.add(log.type === 'success' ? 'log-success' : 'log-error');
+
+            // Иконка статуса (✅ или ❌)
+            const icon = document.createElement('span');
+            icon.classList.add('log-icon');
+            icon.innerHTML = log.type === 'success' ? ' ✅' : ' ❌';
+
+            // Эмодзи (если есть)
+            const emoji = document.createElement('span');
+            emoji.classList.add('log-emoji');
+            emoji.textContent = log.emoji || '';
+
+            // Текст сообщения
+            const text = document.createElement('span');
+            text.textContent = log.message;
+
+            logMessage.appendChild(emoji);
+            logMessage.appendChild(icon);
+
+            logMessage.appendChild(text);
+
+            logDiv.appendChild(logMessage);
+            logDiv.scrollTop = logDiv.scrollHeight;
         });
 
     </script>

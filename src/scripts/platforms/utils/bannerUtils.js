@@ -8,12 +8,17 @@ const { minimatch } = require('minimatch');
 const { ipcMain } = require('electron');
 const cheerio = require('cheerio');
 const puppeteer = require('puppeteer');
+
 //const canvas = require('canvas'); 
 
 const GIFEncoder = require('gifencoder');
 const { Jimp } = require('jimp');
 const logCompressionToSheet = require('../../statistic/logCompressionToSheet');
 
+
+const { 
+    logMessage,
+} = require('../../core/main.js');
 // Задайте свой API-ключ для TinyPNG
 tinify.key = 'JvbcxzKlLyGscgvDrcSdpJxs5knj0r4n'; // Замените на ваш реальный API ключ от TinyPNG
 
@@ -47,7 +52,9 @@ function inlineJavaScript(folderPath) {
 function getCanvasSize(folderPath) {
     const htmlPath = path.join(folderPath, 'index.html');
     if (!fs.existsSync(htmlPath)) {
-        throw new Error(`Файл ${htmlPath} не найден`);
+        //throw new Error(`Файл ${htmlPath} не найден`);
+        logMessage('error', `Файл для взятия размера ${getLastTwoDirectories(htmlPath)} не найден`, '#️⃣');
+        return { width: 0, height: 0};
     }
 
     // Чтение содержимого index.html
@@ -58,7 +65,9 @@ function getCanvasSize(folderPath) {
     const sizeMatch = htmlContent.match(canvasSizeRegex);
 
     if (!sizeMatch) {
-        throw new Error('Размеры canvas не найдены в index.html');
+        //throw new Error('Размеры canvas не найдены в index.html');
+        logMessage('error', `Размеры canvas не найдены в index.html`, '#️⃣');
+        return { width: 0, height: 0};
     }
 
     const [, width, height] = sizeMatch;
@@ -72,7 +81,8 @@ async function downloadAndReplaceScript(folderPath) {
     const externalUrl = 'https://code.createjs.com/1.0.0/createjs.min.js';
 
     if (!fs.existsSync(htmlPath)) {
-        throw new Error(`Файл ${htmlPath} не найден`);
+        logMessage('error', `HTML не найден`, '#️⃣');
+        return
     }
 
     // Загрузка содержимого из внешней ссылки
@@ -82,7 +92,10 @@ async function downloadAndReplaceScript(folderPath) {
         externalScriptContent = response.data;
         console.log(`Скрипт загружен с ${externalUrl}`);
     } catch (error) {
-        throw new Error(`Ошибка при загрузке скрипта: ${error.message}`);
+        logMessage('error', `Ошибка при загрузке скрипта: ${error.message}`, '#️⃣');
+        //throw new Error(`Ошибка при загрузке скрипта: ${error.message}`);
+        return
+        
     }
 
     // Сохранение загруженного скрипта в файл
@@ -90,7 +103,9 @@ async function downloadAndReplaceScript(folderPath) {
         fs.writeFileSync(scriptPath, externalScriptContent, 'utf8');
         console.log(`Скрипт сохранён в ${scriptPath}`);
     } catch (error) {
-        throw new Error(`Ошибка при сохранении файла: ${error.message}`);
+        logMessage('error', `Ошибка при сохранении файла: ${error.message}`, '#️⃣');
+        return
+        //throw new Error(`Ошибка при сохранении файла: ${error.message}`);
     }
 
     // Чтение HTML и замена строки
@@ -103,9 +118,12 @@ async function downloadAndReplaceScript(folderPath) {
     // Запись изменённого HTML обратно в файл
     try {
         fs.writeFileSync(htmlPath, htmlContent, 'utf8');
-        console.log(`HTML обновлён: ссылка на createjs.min.js добавлена в ${htmlPath}`);
+        logMessage('success', `HTML обновлён: ссылка на createjs.min.js добавлена в ${getLastTwoDirectories(htmlPath)}`, '#️⃣')
+        //console.log(`HTML обновлён: ссылка на createjs.min.js добавлена в ${htmlPath}`);
     } catch (error) {
-        throw new Error(`Ошибка при обновлении HTML: ${error.message}`);
+        logMessage('error', `Ошибка при обновлении HTML: ${error.message}`, '#️⃣');
+        return
+       // throw new Error(`Ошибка при обновлении HTML: ${error.message}`);
     }
 }
 
@@ -127,11 +145,13 @@ async function minifyJSFiles(folderPath) {
     const result = minify(code);
 
     if (result.error) {
-        console.error(`Ошибка минификации ${jsPath}: ${result.error}`);
+        logMessage('error', `Ошибка минификации ${getLastTwoDirectories(jsPath)}: ${result.error}`, '#️⃣')
+       // console.error(`Ошибка минификации ${getLastTwoDirectories(jsPath)}: ${result.error}`);
     } else {
         fs.writeFileSync(jsPath, result.code, 'utf8');
         logCompressionToSheet(1, "Минификация");
-        console.log(`Минификация завершена для ${jsPath}`);
+        logMessage('success', `Минификация завершена для ${getLastTwoDirectories(jsPath)}`, '#️⃣')
+        //console.log(`Минификация завершена для ${jsPath}`);
     }
 
 }
@@ -144,11 +164,15 @@ async function compressImages(folderPath) {
     const imageExtensions = ['.jpg', '.png'];
     const imagePaths = getFilePathsByExtensions(folderPath, imageExtensions);
     console.log(`imagePaths ${imagePaths}`);
+    
     return Promise.all(
         imagePaths.map(imagePath =>
             tinify.fromFile(imagePath).toFile(imagePath).catch(err => {
                 console.error(`Ошибка сжатия для ${imagePath}: ${err.message}`);
-            })
+                logMessage('error', `Ошибка сжатия для ${getLastTwoDirectories(imagePath)} Ошибка: ${err.message}`, '🖼️')
+            },
+            logMessage('success', `Картинка успешно сжата: ${getLastTwoDirectories(imagePath)}`, '🖼️')
+        )
         )
     );
 }
@@ -189,10 +213,12 @@ async function replaceImagesWithBase64(folderPath) {
             console.log(`searchPattern ${searchPattern}`);
             // Замена в HTML
             htmlContent = htmlContent.replace(searchPattern, replacePattern);
-            console.log(`Изображение ${image.fileName} заменено на Base64 в ${htmlFilePath}`);
+            logMessage('success', `Изображение ${image.fileName} заменено на Base64 в ${getLastTwoDirectories(htmlFilePath)}`, '🖼️')
+            //console.log(`Изображение ${image.fileName} заменено на Base64 в ${htmlFilePath}`);
             logCompressionToSheet(2, "toBase64");
         } else {
-            console.warn(`Изображение ${image.fileName} не найдено в папке ${folderPath}`);
+            logMessage('error', `Изображение ${image.fileName} не найдено в папке ${getLastTwoDirectories(folderPath)}`, '🖼️')
+            //console.warn(`Изображение ${image.fileName} не найдено в папке ${folderPath}`);
         }
     });
 
@@ -584,6 +610,7 @@ async function archiveFolder(folderPath) {
     });
     archive.finalize();
 
+    logMessage('success', `Архивация успешно ${getLastTwoDirectories(folderPath)}`, '🗂️')
     logCompressionToSheet(1, "Архивация");
 }
 
@@ -614,7 +641,9 @@ async function deleteFiles(folderPath, filePatterns) {
 async function insertScriptAfterMarker(folderPath, marker, scriptToInsert, deleteMarker = false) {
     const htmlPath = path.join(folderPath, 'index.html');
     if (!fs.existsSync(htmlPath)) {
-        throw new Error(`Файл ${htmlPath} не найден`);
+        //throw new Error(`Файл ${htmlPath} не найден`);
+        logMessage('error', `Файл для вставки строки ${getLastTwoDirectories(htmlPath)} не найден`, '#️⃣');
+        return
     }
 
     console.log(`scriptToInsert: ${scriptToInsert}`);
@@ -624,7 +653,9 @@ async function insertScriptAfterMarker(folderPath, marker, scriptToInsert, delet
     // Поиск маркера и вставка строки
     const markerIndex = htmlContent.indexOf(marker);
     if (markerIndex === -1) {
-        throw new Error(`Маркер "${marker}" не найден в ${htmlPath}`);
+        logMessage('error', `Маркер "${marker}" не найден в ${getLastTwoDirectories(htmlPath)}`, '#️⃣');
+        return
+        //throw new Error(`Маркер "${marker}" не найден в ${htmlPath}`);
     }
 
     const insertPosition = markerIndex + marker.length;
@@ -638,13 +669,16 @@ async function insertScriptAfterMarker(folderPath, marker, scriptToInsert, delet
 
     // Запись измененного содержимого обратно в файл
     fs.writeFileSync(htmlPath, htmlContent, 'utf8');
-    console.log(`Строка успешно вставлена в ${htmlPath}`);
+    logMessage('success', `Строка успешно вставлена в ${getLastTwoDirectories(htmlPath)}`, '#️⃣');
+    //console.log(`Строка успешно вставлена в ${htmlPath}`);
 }
 
 async function wrapDiv(folderPath, targetDivId, wrapperDiv) {
     const htmlPath = path.join(folderPath, 'index.html');
     if (!fs.existsSync(htmlPath)) {
-        throw new Error(`Файл ${htmlPath} не найден`);
+        logMessage('error', `Файл ${getLastTwoDirectories(htmlPath)} не найден`, '#️⃣');
+        return
+        //throw new Error(`Файл ${htmlPath} не найден`);
     }
 
     // Чтение содержимого HTML
@@ -654,13 +688,17 @@ async function wrapDiv(folderPath, targetDivId, wrapperDiv) {
     // Находим div с указанным id
     const targetDiv = $(`#${targetDivId}`);
     if (targetDiv.length === 0) {
-        throw new Error(`Div с id="${targetDivId}" не найден в ${htmlPath}`);
+        logMessage('error', `Div с id="${targetDivId}" не найден в ${getLastTwoDirectories(htmlPath)}`, '#️⃣');
+        return
+        //throw new Error(`Div с id="${targetDivId}" не найден в ${htmlPath}`);
     }
 
     // Извлекаем имя тега из wrapperDiv
     const tagMatch = wrapperDiv.match(/^<([a-zA-Z0-9]+)/);
     if (!tagMatch) {
-        throw new Error('Некорректный wrapperDiv. Убедитесь, что это валидный HTML-тег.');
+        logMessage('error', `Некорректный wrapperDiv. Убедитесь, что это валидный HTML-тег.`, '#️⃣');
+        return
+        //throw new Error('Некорректный wrapperDiv. Убедитесь, что это валидный HTML-тег.');
     }
 
     const wrapperTag = tagMatch[1]; // Имя тега (например, "a", "p", "div");
@@ -670,7 +708,8 @@ async function wrapDiv(folderPath, targetDivId, wrapperDiv) {
 
     // Записываем обновлённый HTML обратно в файл
     fs.writeFileSync(htmlPath, $.html(), 'utf8');
-    console.log(`Div с id="${targetDivId}" успешно обёрнут в ${htmlPath}`);
+    logMessage('success', `Div с id="${targetDivId}" успешно обёрнут в ${getFilePathsByExtensions(htmlPath)}`, '#️⃣');
+    //console.log(`Div с id="${targetDivId}" успешно обёрнут в ${htmlPath}`);
 }
 
 async function prepareReleaseFolder(folderPath, name = 'release') {
@@ -728,6 +767,11 @@ function deleteAllExceptImg(folderPath) {
     });
 
     console.log(`Очистка папки ${folderPath} завершена, папка img сохранена`);
+}
+
+function getLastTwoDirectories(fullPath) {
+    const parts = fullPath.split(path.sep); // Разделяем путь по разделителю (Windows или Unix)
+    return parts.slice(-2).join(path.sep); // Берём последние 3 элемента и соединяем обратно
 }
 
 
