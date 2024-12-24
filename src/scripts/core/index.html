@@ -199,7 +199,8 @@
             archiveButton.addEventListener('drop', async (e) => {
                 e.preventDefault();
                 archiveButton.classList.remove('drag-over');
-
+                const log = document.getElementById('log');
+                log.innerHTML = '';
                 const items = [...e.dataTransfer.items];
                 const paths = [];
 

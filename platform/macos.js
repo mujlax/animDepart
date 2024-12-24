@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const tinify = require('tinify');
 const uglifyJS = require('uglify-js');
-const logCompressionToSheet = require('../src/scripts/statistic/logCompressionToSheet');
+const logCompressionToSheet = require('../src/scripts/statistic/logCompressionToSheet.js');
 
 tinify.key = 'JvbcxzKlLyGscgvDrcSdpJxs5knj0r4n'; // Замените на ваш реальный API ключ от TinyPNG
 
@@ -34,6 +34,7 @@ function archiveSelectedItems(callback) {
     exec(`osascript -e '${appleScript}'`, (error, stdout, stderr) => {
         if (error) {
             console.error(`Ошибка архивирования: ${error.message}`);
+            //logMessage('error', `Ошибка архивирования: ${error.message}`, '🗂️');
             callback('Ошибка архивирования');
             return;
         }
@@ -43,7 +44,7 @@ function archiveSelectedItems(callback) {
 
         // Логируем результат в Google Sheets
         logCompressionToSheet(archivedFoldersCount, "Архивация");
-
+        // logMessage('success', `Архивирование завершено успешно. Архивировано папок: ${archivedFoldersCount}`, '🗂️');
         callback(`Архивирование завершено успешно. Архивировано папок: ${archivedFoldersCount}`);
     });
 }
@@ -145,12 +146,14 @@ function compressImages(callback) {
 
     exec(`osascript -e '${appleScript}'`, (error, stdout, stderr) => {
         if (error) {
+            //logMessage('error', `Ошибка получения путей к элементам`, '🖼️');
             callback('Ошибка получения путей к элементам');
             return;
         }
 
         const selectedPaths = stdout.trim().split(",").filter(Boolean);
         if (selectedPaths.length === 0) {
+            //logMessage('error', `Файлы или папки не выбраны или пути невалидны`, '🖼️');
             callback('Файлы или папки не выбраны или пути невалидны');
             return;
         }
@@ -182,6 +185,7 @@ function compressImages(callback) {
         });
 
         if (imagePaths.length === 0) {
+           // logMessage('error', `Не найдены изображения для сжатия`, '🖼️');
             callback('Не найдены изображения для сжатия');
             return;
         }
@@ -199,13 +203,14 @@ function compressImages(callback) {
                 }
                 compressedCount++;
                 if (compressedCount === imagePaths.length) {
-                    res.push(errors.length === 0 ? `Все изображения успешно сжаты (${compressedCount})` : `Сжатие завершено с ошибками: ${errors.join('; ')}`)
                     res.push(tinify.compressionCount);
+                    res.push(errors.length === 0 ? `Все изображения успешно сжаты (${compressedCount})` : `Сжатие завершено с ошибками: ${errors.join('; ')}`)
+                    
                     callback(res);
                     logCompressionToSheet(compressedCount, "Сжатие изображения");
                 }
             });
-
+            //logMessage('success', `Картинка сжата ${getLastTwoDirectories(imagePath)}`, '🖼️');
         });
     });
 }
@@ -375,6 +380,11 @@ end tell
             }
         });
     });
+}
+
+function getLastTwoDirectories(fullPath) {
+    const parts = fullPath.split(path.sep); // Разделяем путь по разделителю (Windows или Unix)
+    return parts.slice(-2).join(path.sep); // Берём последние 3 элемента и соединяем обратно
 }
 
 module.exports = {
